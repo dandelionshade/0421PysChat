@@ -33,8 +33,8 @@ PsyChat 是一个基于 RAG (Retrieval-Augmented Generation) 架构的心理健�
 
 1.  进入 `backend` 目录: `cd backend`
 2.  创建并激活虚拟环境 (例如: `python -m venv .venv` 和 `source .venv/bin/activate` 或 `.\.venv\Scripts\activate`)
-3.  安装依赖: `pip install -r requirements.txt` (注意: 你可能需要先创建 `requirements.txt` 文件)
-4.  配置 `.env` 文件 (参考 `RAG_IMPLEMENTATION.md` 中的环境配置部分)。
+3.  安装依赖: `pip install -r requirements.txt`
+4.  创建 `.env` 文件: 复制 `backend/.env.example` 为 `backend/.env`，并根据你的环境配置填充实际值 (数据库凭据, AnythingLLM URL/Slug/Key 等)。 **不要将你的 `.env` 文件提交到版本控制。**
 5.  运行 FastAPI 服务: `uvicorn main:app --reload --host 127.0.0.1 --port 8000` 或使用 VSCode 的 `Python: FastAPI` 启动配置。
 
 ### 前端设置

@@ -1,3 +1,11 @@
+<!--
+ * @Author: zhen doniajohary2677@gmail.com
+ * @Date: 2025-04-28 19:40:30
+ * @LastEditors: zhen doniajohary2677@gmail.com
+ * @LastEditTime: 2025-04-29 16:30:01
+ * @FilePath: \0421PsyChat\CONTRIBUTING.md
+ * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
+-->
 # 贡献指南
 
 感谢您对PsyChat项目的兴趣！这份文档提供了参与项目开发的指导原则。
@@ -44,13 +52,13 @@
 
 采用[Conventional Commits](https://www.conventionalcommits.org/)规范:
 
-```
+
 <类型>[可选作用域]: <描述>
 
 [可选正文]
 
 [可选页脚]
-```
+
 
 类型包括:
 

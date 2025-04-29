@@ -1,0 +1,5 @@
+fastapi
+uvicorn[standard] # Includes standard dependencies like websockets and http tools
+python-dotenv
+pymysql
+httpx
