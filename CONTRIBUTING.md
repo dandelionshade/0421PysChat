@@ -2,7 +2,7 @@
  * @Author: zhen doniajohary2677@gmail.com
  * @Date: 2025-04-28 19:40:30
  * @LastEditors: zhen doniajohary2677@gmail.com
- * @LastEditTime: 2025-04-29 16:30:01
+ * @LastEditTime: 2025-04-29 16:59:14
  * @FilePath: \0421PsyChat\CONTRIBUTING.md
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -52,13 +52,11 @@
 
 采用[Conventional Commits](https://www.conventionalcommits.org/)规范:
 
-
 <类型>[可选作用域]: <描述>
 
 [可选正文]
 
 [可选页脚]
-
 
 类型包括:
 
@@ -73,14 +71,12 @@
 
 示例：
 
-```
 feat(chat): 添加用户打字状态指示器
 
 - 实现实时打字状态API
 - 添加前端状态指示动画
 
 解决: #123
-```
 
 ## 分支策略
 
