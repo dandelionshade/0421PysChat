@@ -8,7 +8,7 @@
 
 ![RAG 架构](./docs/images/rag_architecture.png)
 
-#### 核心组件:
+#### 核心组件
 
 1. **前端 (Vue.js + Element Plus)**
    - 负责用户界面和与后端 API 的交互
