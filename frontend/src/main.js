@@ -18,4 +18,8 @@ const app = createApp(App)
 app.use(ElementPlus)
 app.use(router)
 
+// Mount and signal that app is ready
 app.mount('#app')
+if (window.appMounted) {
+  window.appMounted()
+}

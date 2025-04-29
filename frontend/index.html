@@ -2,13 +2,122 @@
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.ico" />
+    <!-- Favicon handling for different platforms -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    
+    <!-- Responsive design -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#409eff" />
+    
+    <!-- Primary meta tags -->
     <title>PsyChat - 心理健康助手</title>
-    <meta name="description" content="PsyChat - 基于RAG的心理健康聊天应用" />
+    <meta name="description" content="PsyChat 是一个基于RAG技术的心理健康聊天应用，提供情感支持和专业心理健康信息。" />
+    <meta name="keywords" content="心理健康, 聊天机器人, 心理咨询, RAG, 人工智能" />
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="PsyChat - 心理健康助手" />
+    <meta property="og:description" content="基于RAG的心理健康聊天应用，提供情感支持和专业心理健康信息。" />
+    <meta property="og:image" content="/og-image.jpg" />
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:title" content="PsyChat - 心理健康助手" />
+    <meta property="twitter:description" content="基于RAG的心理健康聊天应用，提供情感支持和专业心理健康信息。" />
+    <meta property="twitter:image" content="/og-image.jpg" />
+    
+    <!-- Preconnect to API -->
+    <link rel="preconnect" href="http://127.0.0.1:8000" crossorigin />
+    
+    <!-- Initial CSS to prevent FOUC (Flash of Unstyled Content) -->
+    <style>
+      .app-loading {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background-color: #f5f7fa;
+        z-index: 9999;
+        transition: opacity 0.3s;
+      }
+      .app-loading.hidden {
+        opacity: 0;
+      }
+      .app-loading-title {
+        font-family: 'Helvetica Neue', Helvetica, 'PingFang SC', Arial, sans-serif;
+        font-size: 24px;
+        font-weight: bold;
+        color: #409eff;
+        margin-bottom: 20px;
+      }
+      .app-loading-spinner {
+        width: 40px;
+        height: 40px;
+        border: 3px solid #e6e6e6;
+        border-top: 3px solid #409eff;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      /* Optimize font loading */
+      body {
+        font-family: 'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB',
+          'Microsoft YaHei', '微软雅黑', Arial, sans-serif;
+      }
+    </style>
   </head>
   <body>
-    <div id="app"></div>
+    <div id="app">
+      <!-- Loading state before Vue mounts -->
+      <div class="app-loading" id="app-loading">
+        <div class="app-loading-title">PsyChat</div>
+        <div class="app-loading-spinner"></div>
+      </div>
+    </div>
+    
+    <!-- No-JS fallback -->
+    <noscript>
+      <div style="padding: 20px; text-align: center;">
+        <h2>PsyChat 需要启用 JavaScript</h2>
+        <p>请启用浏览器的 JavaScript 功能以使用 PsyChat 心理健康助手。</p>
+      </div>
+    </noscript>
+    
     <script type="module" src="/src/main.js"></script>
+    <script>
+      // Hide loading screen once app is mounted
+      window.addEventListener('DOMContentLoaded', () => {
+        const mountApp = () => {
+          setTimeout(() => {
+            const loadingElement = document.getElementById('app-loading');
+            if (loadingElement) {
+              loadingElement.classList.add('hidden');
+              setTimeout(() => {
+                loadingElement.style.display = 'none';
+              }, 300);
+            }
+          }, 500); // Small delay to ensure Vue has mounted
+        };
+        
+        // Wait for Vue to mount or timeout after 2s
+        let timeout = setTimeout(mountApp, 2000);
+        window.appMounted = () => {
+          clearTimeout(timeout);
+          mountApp();
+        };
+      });
+    </script>
   </body>
 </html>

@@ -71,7 +71,6 @@ AnythingLLM 作为预置的 RAG 后端具有以下优势:
 6. **配置 Workspace Prompt**
    - 设置 System Prompt，定义聊天机器人角色:
 
-   ```
    你是一位专业、善解人意的心理健康顾问，名为"心理助手"。你的职责是提供情感支持和基于证据的心理健康信息。
 
    请遵循以下原则：
@@ -95,7 +94,6 @@ AnythingLLM 作为预置的 RAG 后端具有以下优势:
    - 危机情况请拨打: 110 或 120
 
    始终记住，你不是替代专业心理健康服务，而是提供支持和信息的辅助工具。
-   ```
 
 7. **测试聊天**
    - 在 AnythingLLM 界面进行对话测试
@@ -156,11 +154,10 @@ AnythingLLM 作为预置的 RAG 后端具有以下优势:
 
 3. **更新环境配置**
    - 在 `.env` 文件中添加:
-   ```
-   ANYTHINGLLM_API_BASE_URL=http://localhost:3001
+
+   ANYTHINGLLM_API_BASE_URL=<http://localhost:3001>
    ANYTHINGLLM_WORKSPACE_SLUG=mentalhealthbot
    ANYTHINGLLM_API_KEY=your_api_key_if_needed
-   ```
 
 ### 阶段三: 前端开发
 
@@ -169,6 +166,7 @@ AnythingLLM 作为预置的 RAG 后端具有以下优势:
 ### 阶段四: 数据库设计
 
 保持原有 MySQL 数据库设计，主要用于:
+
 1. 存储心理健康资源原始文本
 2. 提供资源导航数据
 3. (可选) 存储用户信息和应用配置
