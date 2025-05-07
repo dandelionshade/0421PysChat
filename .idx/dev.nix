@@ -1,16 +1,18 @@
-op1# To learn more about how to use Nix to configure your environment
+# To learn more about how to use Nix to configure your environment
 # see: https://firebase.google.com/docs/studio/customize-workspace
-{ pkgs, ... }: {
+
+{ pkgs, ... }: # Define a function that takes pkgs as an argument
+{
   # Which nixpkgs channel to use.
   channel = "stable-24.05"; # or "unstable"
 
   # Use https://search.nixos.org/packages to find packages
   packages = [
     # pkgs.go
-    # pkgs.python311
-    # pkgs.python311Packages.pip
-    # pkgs.nodejs_20
-    # pkgs.nodePackages.nodemon
+    pkgs.python311 # Access python311 from the pkgs collection
+    pkgs.python311Packages.pip # Access python311Packages.pip from the pkgs collection
+    pkgs.nodejs_20 # Access nodejs_20 from the pkgs collection
+    pkgs.nodePackages.nodemon # Access nodePackages.nodemon from the pkgs collection
   ];
 
   # Sets environment variables in the workspace
@@ -43,7 +45,7 @@ op1# To learn more about how to use Nix to configure your environment
       # Runs when a workspace is first created
       onCreate = {
         # Example: install JS dependencies from NPM
-        # npm-install = "npm install";
+        "npm-install" = "npm install";
       };
       # Runs when the workspace is (re)started
       onStart = {
