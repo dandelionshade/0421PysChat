@@ -1,121 +1,121 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-  <head>
-    <meta charset="UTF-8" />
-    <!-- Favicon handling for different platforms -->
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-    <link rel="manifest" href="/site.webmanifest" />
+<!DOCTYPE html> <!-- Defines this document as HTML5 -->
+<html lang="zh-CN"> <!-- Root HTML element with Chinese language attribute -->
+  <head> <!-- Contains meta information, styles, and links -->
+    <meta charset="UTF-8" /> <!-- Specifies character encoding as UTF-8 for proper text display -->
+    <!-- Collection of favicon links for different platforms/browsers -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" /> <!-- SVG favicon for modern browsers -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" /> <!-- 32x32 PNG favicon -->
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" /> <!-- 16x16 PNG favicon -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" /> <!-- Icon for iOS devices -->
+    <link rel="manifest" href="/site.webmanifest" /> <!-- Web app manifest for PWA support -->
     
-    <!-- Responsive design -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#409eff" />
+    <!-- Responsive design meta tags -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /> <!-- Controls viewport for responsive design -->
+    <meta name="theme-color" content="#409eff" /> <!-- Sets theme color for browser UI (mobile) -->
     
-    <!-- Primary meta tags -->
-    <title>PsyChat - 心理健康助手</title>
-    <meta name="description" content="PsyChat 是一个基于RAG技术的心理健康聊天应用，提供情感支持和专业心理健康信息。" />
-    <meta name="keywords" content="心理健康, 聊天机器人, 心理咨询, RAG, 人工智能" />
+    <!-- SEO meta tags -->
+    <title>PsyChat - 心理健康助手</title> <!-- Page title shown in browser tab -->
+    <meta name="description" content="PsyChat 是一个基于RAG技术的心理健康聊天应用，提供情感支持和专业心理健康信息。" /> <!-- Page description for search engines -->
+    <meta name="keywords" content="心理健康, 聊天机器人, 心理咨询, RAG, 人工智能" /> <!-- Keywords for search engines -->
     
-    <!-- Open Graph / Facebook -->
-    <meta property="og:type" content="website" />
-    <meta property="og:title" content="PsyChat - 心理健康助手" />
-    <meta property="og:description" content="基于RAG的心理健康聊天应用，提供情感支持和专业心理健康信息。" />
-    <meta property="og:image" content="/og-image.jpg" />
+    <!-- Open Graph meta tags for better social media sharing (Facebook) -->
+    <meta property="og:type" content="website" /> <!-- Specifies content type -->
+    <meta property="og:title" content="PsyChat - 心理健康助手" /> <!-- Title when shared -->
+    <meta property="og:description" content="基于RAG的心理健康聊天应用，提供情感支持和专业心理健康信息。" /> <!-- Description when shared -->
+    <meta property="og:image" content="/og-image.jpg" /> <!-- Image shown when shared -->
     
-    <!-- Twitter -->
-    <meta property="twitter:card" content="summary_large_image" />
-    <meta property="twitter:title" content="PsyChat - 心理健康助手" />
-    <meta property="twitter:description" content="基于RAG的心理健康聊天应用，提供情感支持和专业心理健康信息。" />
-    <meta property="twitter:image" content="/og-image.jpg" />
+    <!-- Twitter Card meta tags for better sharing on Twitter -->
+    <meta property="twitter:card" content="summary_large_image" /> <!-- Type of Twitter card -->
+    <meta property="twitter:title" content="PsyChat - 心理健康助手" /> <!-- Title when shared on Twitter -->
+    <meta property="twitter:description" content="基于RAG的心理健康聊天应用，提供情感支持和专业心理健康信息。" /> <!-- Description when shared on Twitter -->
+    <meta property="twitter:image" content="/og-image.jpg" /> <!-- Image shown when shared on Twitter -->
     
-    <!-- Preconnect to API -->
-    <link rel="preconnect" href="http://127.0.0.1:8000" crossorigin />
+    <!-- Performance optimization: preconnect to API server -->
+    <link rel="preconnect" href="http://127.0.0.1:8000" crossorigin /> <!-- Establishes early connection to API server -->
     
-    <!-- Initial CSS to prevent FOUC (Flash of Unstyled Content) -->
+    <!-- Initial loading styles to show before Vue loads -->
     <style>
       .app-loading {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        background-color: #f5f7fa;
-        z-index: 9999;
-        transition: opacity 0.3s;
+        position: fixed;         /* Fixed position relative to viewport */
+        top: 0;                  /* Positioned at the top */
+        left: 0;                 /* Positioned at the left */
+        width: 100%;             /* Takes full width */
+        height: 100%;            /* Takes full height */
+        display: flex;           /* Uses flexbox for centering */
+        flex-direction: column;  /* Stack children vertically */
+        align-items: center;     /* Center children horizontally */
+        justify-content: center; /* Center children vertically */
+        background-color: #f5f7fa; /* Light background color */
+        z-index: 9999;           /* Ensures it appears on top of other elements */
+        transition: opacity 0.3s; /* Smooth transition for opacity changes */
       }
       .app-loading.hidden {
-        opacity: 0;
+        opacity: 0;              /* Makes element transparent when hidden class is applied */
       }
       .app-loading-title {
-        font-family: 'Helvetica Neue', Helvetica, 'PingFang SC', Arial, sans-serif;
-        font-size: 24px;
-        font-weight: bold;
-        color: #409eff;
-        margin-bottom: 20px;
+        font-family: 'Helvetica Neue', Helvetica, 'PingFang SC', Arial, sans-serif; /* Font stack */
+        font-size: 24px;         /* Text size */
+        font-weight: bold;       /* Bold text */
+        color: #409eff;          /* Blue text color */
+        margin-bottom: 20px;     /* Space below the title */
       }
       .app-loading-spinner {
-        width: 40px;
-        height: 40px;
-        border: 3px solid #e6e6e6;
-        border-top: 3px solid #409eff;
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
+        width: 40px;             /* Width of spinner */
+        height: 40px;            /* Height of spinner */
+        border: 3px solid #e6e6e6; /* Light gray border */
+        border-top: 3px solid #409eff; /* Blue top border creates spinning effect */
+        border-radius: 50%;      /* Makes it circular */
+        animation: spin 1s linear infinite; /* Applies spinning animation */
       }
       @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
+        0% { transform: rotate(0deg); }    /* Start position */
+        100% { transform: rotate(360deg); } /* End position - full rotation */
       }
-      /* Optimize font loading */
+      /* Font optimization */
       body {
         font-family: 'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB',
-          'Microsoft YaHei', '微软雅黑', Arial, sans-serif;
+          'Microsoft YaHei', '微软雅黑', Arial, sans-serif; /* Font stack with Chinese support */
       }
     </style>
   </head>
-  <body>
-    <div id="app">
-      <!-- Loading state before Vue mounts -->
+  <body> <!-- Contains the visible content of the page -->
+    <div id="app"> <!-- Root element where Vue will mount the application -->
+      <!-- Loading screen shown before Vue loads -->
       <div class="app-loading" id="app-loading">
-        <div class="app-loading-title">PsyChat</div>
-        <div class="app-loading-spinner"></div>
+        <div class="app-loading-title">PsyChat</div> <!-- Loading screen title -->
+        <div class="app-loading-spinner"></div> <!-- Spinning loader animation -->
       </div>
     </div>
     
-    <!-- No-JS fallback -->
+    <!-- Fallback content for users who have disabled JavaScript -->
     <noscript>
       <div style="padding: 20px; text-align: center;">
-        <h2>PsyChat 需要启用 JavaScript</h2>
-        <p>请启用浏览器的 JavaScript 功能以使用 PsyChat 心理健康助手。</p>
+        <h2>PsyChat 需要启用 JavaScript</h2> <!-- Title for no-JS warning -->
+        <p>请启用浏览器的 JavaScript 功能以使用 PsyChat 心理健康助手。</p> <!-- Instructions -->
       </div>
     </noscript>
     
-    <script type="module" src="/src/main.js"></script>
+    <script type="module" src="/src/main.js"></script> <!-- Entry point for Vue application -->
     <script>
-      // Hide loading screen once app is mounted
-      window.addEventListener('DOMContentLoaded', () => {
+      // Script to handle the loading screen
+      window.addEventListener('DOMContentLoaded', () => { // Runs when DOM is loaded
         const mountApp = () => {
-          setTimeout(() => {
-            const loadingElement = document.getElementById('app-loading');
+          setTimeout(() => { // Small delay for smoother transition
+            const loadingElement = document.getElementById('app-loading'); // Get loading element
             if (loadingElement) {
-              loadingElement.classList.add('hidden');
+              loadingElement.classList.add('hidden'); // Add hidden class for fade-out effect
               setTimeout(() => {
-                loadingElement.style.display = 'none';
-              }, 300);
+                loadingElement.style.display = 'none'; // Hide completely after transition
+              }, 300); // Matches the transition duration
             }
-          }, 500); // Small delay to ensure Vue has mounted
+          }, 500); // Delay before hiding loading screen
         };
         
-        // Wait for Vue to mount or timeout after 2s
-        let timeout = setTimeout(mountApp, 2000);
-        window.appMounted = () => {
-          clearTimeout(timeout);
-          mountApp();
+        // Fallback in case Vue takes too long to mount
+        let timeout = setTimeout(mountApp, 2000); // Auto-hide after 2 seconds
+        window.appMounted = () => { // Function to be called when Vue mounts
+          clearTimeout(timeout); // Clear the fallback timeout
+          mountApp(); // Hide the loading screen
         };
       });
     </script>
