@@ -11,7 +11,7 @@
 
     {
       "name": "Python: FastAPI",
-      "type": "python",
+      "type": "debugpy",
       "request": "launch",
       "module": "uvicorn",
       "args": ["main:app", "--reload", "--host", "127.0.0.1", "--port", "8000"],
