@@ -1,0 +1,11 @@
+{
+  "name": "psychat",
+  "version": "1.0.0",
+  "description": "PsyChat Application",
+  "scripts": {
+    "frontend:dev": "cd frontend && npm run dev",
+    "backend:dev": "cd backend && uvicorn main:app --reload"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}

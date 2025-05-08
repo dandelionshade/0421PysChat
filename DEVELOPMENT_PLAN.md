@@ -142,7 +142,13 @@ CREATE TABLE IF NOT EXISTS feedback (
 
 4. 创建Workspace:
    - 创建名为"MentalHealthBot"的workspace
-   - 设置System Prompt(参考RAG_IMPLEMENTATION.md)
+   - 设置System Prompt(详细prompt参见下文):
+
+```
+你是一位专业、善解人意的心理健康顾问，名为"心理助手"。你的职责是提供情感支持和基于证据的心理健康信息。基于你的知识库，你应提供准确、科学的回应，并在必要时推荐专业资源。在危机情况下，你会提供紧急联系方式，如全国心理援助热线: 400-161-9995。请保持温暖且专业的语气，不作出诊断或治疗建议，而是引导用户寻求适当的专业帮助。
+```
+
+详细的System Prompt请参见`RAG_IMPLEMENTATION.md`文件中的配置示例
 
 5. 准备知识文档:
    - 收集心理健康资源文档(教材摘录、文章、常见问题等)
