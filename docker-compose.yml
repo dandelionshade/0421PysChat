@@ -1,0 +1,75 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: ../Dockerfile.frontend
+    ports:
+      - "${FRONTEND_PORT:-80}:80"
+    depends_on:
+      - backend
+    networks:
+      - psychat-network
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: ../Dockerfile.backend
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    environment:
+      - ANYTHINGLLM_API_BASE_URL=http://anythingllm:3001
+      - ANYTHINGLLM_WORKSPACE_SLUG=${ANYTHINGLLM_WORKSPACE_SLUG:-mentalhealthbot}
+      - ANYTHINGLLM_API_KEY=${ANYTHINGLLM_API_KEY}
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_USER=${MYSQL_USER:-psychat_app}
+      - DB_PASSWORD=${MYSQL_PASSWORD:-secure_user_password}
+      - DB_NAME=${MYSQL_DATABASE:-mental_health_db}
+    depends_on:
+      - db
+      - anythingllm
+    networks:
+      - psychat-network
+    restart: unless-stopped
+
+  db:
+    image: mysql:8.0
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-secure_root_password}
+      - MYSQL_DATABASE=${MYSQL_DATABASE:-mental_health_db}
+      - MYSQL_USER=${MYSQL_USER:-psychat_app}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-secure_user_password}
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - psychat-network
+    restart: unless-stopped
+
+  anythingllm:
+    image: mintplexlabs/anythingllm:latest
+    ports:
+      - "${ANYTHINGLLM_PORT:-3001}:3001"
+    volumes:
+      - anythingllm-data:/app/server/storage
+    environment:
+      - LLM_PROVIDER=custom
+      - CUSTOM_MODEL_URL=${DEEPSEEK_API_URL:-https://api.deepseek.com/v1}
+      - CUSTOM_MODEL_KEY=${DEEPSEEK_API_KEY}
+      - EMBEDDING_ENGINE=bge-base-zh-v1.5
+    networks:
+      - psychat-network
+    restart: unless-stopped
+
+networks:
+  psychat-network:
+    driver: bridge
+
+volumes:
+  mysql-data:
+  anythingllm-data:

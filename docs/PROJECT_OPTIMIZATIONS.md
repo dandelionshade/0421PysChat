@@ -1,4 +1,12 @@
-# 项目优化与清理记录 (YYYY-MM-DD)
+<!--
+ * @Author: zhen doniajohary2677@gmail.com
+ * @Date: 2025-05-08 10:02:32
+ * @LastEditors: zhen doniajohary2677@gmail.com
+ * @LastEditTime: 2025-05-10 10:00:00
+ * @FilePath: \0421PysChat\docs\PROJECT_OPTIMIZATIONS.md
+ * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
+-->
+# 项目优化与清理记录 (2025-05-10)
 
 本文档记录了对 PsyChat 项目进行的结构优化和文件清理操作。
 
@@ -25,13 +33,62 @@
 
 ## 4. 前端环境补充
 
-* 目的：构建并启动基于 Vue 3 + Vite 的前端应用，集成 Element Plus，提供聊天与资源页面。
+* 目的：构建并启动基于 Vue 3 + Vite 的前端应用，集成 Element Plus，提供聊天与资源页面。
 * 新增/修改文件：
   * **frontend/package.json**：完善项目元信息、scripts、添加 `vue`、`vue-router`、`vite`、`@vitejs/plugin-vue` 等依赖。
   * **frontend/index.html**：新增应用入口 HTML。
   * **frontend/src/App.vue**：新增主布局组件，包含导航与路由视图。
   * **frontend/src/views/ChatView.vue**：新增聊天页面组件，实现消息展示、输入与调用后端 API。
   * **frontend/src/views/ResourcePage.vue**：新增资源列表页组件，实现筛选表单与资源展示。
+
+## 5. 项目结构标准化 (2025-05-10)
+
+* **目的**：使项目结构符合标准化要求，优化文件组织，提高开发效率和可维护性。
+* **具体变更**：
+
+### 5.1 标准文件结构实现
+
+确保项目符合以下标准化文件结构：
+
+```
+.
+├── backend
+│   ├── api
+│   ├── core
+│   ├── db
+│   ├── models
+│   ├── routers
+│   ├── services
+│   └── main.py
+├── docs
+│   ├── images
+│   └── PROJECT_OPTIMIZATIONS.md
+├── frontend
+│   ├── public
+│   └── src
+│       ├── assets
+│       ├── components
+│       ├── views
+│       └── App.vue
+├── tests
+│   ├── integration
+│   └── unit
+└── README.md
+```
+
+### 5.2 文件命名规范
+
+* 所有 Python 源文件采用小写字母和下划线命名法（如 `main.py`、`user_router.py`）。
+* 所有前端文件采用小写字母和短横线命名法（如 `app.vue`、`user-profile.vue`）。
+
+### 5.3 目录结构优化
+
+* 后端：
+  * **操作**: 将后端所有 Python 源文件移至 `backend/` 目录，并按功能模块划分子目录。
+  * **原因**: 统一后端代码存放位置，按功能模块划分子目录，有助于代码的组织与管理。
+* 前端：
+  * **操作**: 将前端所有源文件移至 `frontend/src/` 目录，并按功能划分子目录。
+  * **原因**: 统一前端代码存放位置，按功能划分子目录，有助于代码的组织与管理。
 
 ## 总结
 

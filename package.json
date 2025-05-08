@@ -2,10 +2,18 @@
   "name": "psychat",
   "version": "1.0.0",
   "description": "PsyChat Application",
+  "private": true,
+  "workspaces": [
+    "frontend"
+  ],
   "scripts": {
     "frontend:dev": "cd frontend && npm run dev",
-    "backend:dev": "cd backend && uvicorn main:app --reload"
+    "backend:dev": "cd backend && uvicorn main:app --reload",
+    "start": "concurrently \"npm run frontend:dev\" \"npm run backend:dev\"",
+    "install:all": "npm install && cd frontend && npm install"
   },
   "dependencies": {},
-  "devDependencies": {}
+  "devDependencies": {
+    "concurrently": "^8.2.0"
+  }
 }

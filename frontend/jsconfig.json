@@ -2,12 +2,12 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@/*": ["frontend/src/*"]
+      "@/*": ["src/*"]
     },
     "target": "es2020",
     "module": "esnext",
     "moduleResolution": "node"
   },
-  "include": ["frontend/**/*"],
+  "include": ["src/**/*", "tests/**/*", "vite.config.js"],
   "exclude": ["node_modules", "dist"]
 }
