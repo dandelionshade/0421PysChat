@@ -3,3 +3,4 @@ uvicorn[standard] # Includes standard dependencies like websockets and http tool
 python-dotenv
 pymysql
 httpx
+pydantic

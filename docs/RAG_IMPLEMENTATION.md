@@ -147,18 +147,45 @@ AnythingLLM 作为预置的 RAG 后端具有以下优势:
 1. **更新依赖**
    - 移除 `sentence-transformers` 和 `chromadb`
    - 添加 `requests` 或 `httpx`
+   - (建议) 添加 `python-logging` (通常是标准库，但确保配置)
 
 2. **修改聊天端点**
    - 调整 `/api/chat` 端点，使其转发请求到 AnythingLLM API
 
    ```python
+   # main.py (FastAPI backend)
+   # Ensure you have:
+   # import httpx
+   # import logging
+   # from pydantic import BaseModel
+   # from fastapi import FastAPI, HTTPException
+   # import os
+
+   # logger = logging.getLogger(__name__) # Configure logger as needed
+
+   # ANYTHINGLLM_API_BASE_URL = os.getenv("ANYTHINGLLM_API_BASE_URL")
+   # ANYTHINGLLM_WORKSPACE_SLUG = os.getenv("ANYTHINGLLM_WORKSPACE_SLUG")
+   # ANYTHINGLLM_API_KEY = os.getenv("ANYTHINGLLM_API_KEY")
+
+   # class ChatRequest(BaseModel):
+   #     message: str
+
+   # class ChatResponse(BaseModel):
+   #     reply: str # Changed from 'response' to 'reply'
+
+   # app = FastAPI() # Assuming app is already defined
+
    @app.post("/api/chat", response_model=ChatResponse)
    async def chat_endpoint(request: ChatRequest):
        user_query = request.message
        logger.info(f"Received query: {user_query}")
 
-       # 调用 AnythingLLM API
+       if not ANYTHINGLLM_WORKSPACE_SLUG:
+           logger.error("AnythingLLM workspace slug not configured.")
+           raise HTTPException(status_code=500, detail="Server configuration error: Workspace not set.")
+
        anythingllm_chat_url = f"{ANYTHINGLLM_API_BASE_URL}/api/v1/workspace/{ANYTHINGLLM_WORKSPACE_SLUG}/chat"
+       
        headers = {
            "Content-Type": "application/json",
        }
@@ -167,26 +194,34 @@ AnythingLLM 作为预置的 RAG 后端具有以下优势:
 
        payload = {
            "message": user_query,
-           "mode": "chat"
+           "mode": "chat"  # Ensure 'mode' is 'chat'
        }
 
        try:
-           # 使用 httpx 实现异步请求
-           async with httpx.AsyncClient(timeout=60) as client:
+           async with httpx.AsyncClient(timeout=60.0) as client: # Added timeout
                response = await client.post(anythingllm_chat_url, headers=headers, json=payload)
+               response.raise_for_status()  # Raises an exception for 4XX/5XX responses
                
-           response.raise_for_status()
            result = response.json()
+           logger.info(f"AnythingLLM response: {result}")
            
-           # 解析 AnythingLLM 响应
+           # Enhanced response parsing
            reply_content = result.get("textResponse") or result.get("response", {}).get("text")
+           
            if not reply_content:
+                logger.warning("No valid reply content from AnythingLLM.")
                 reply_content = "抱歉，无法获取有效回复。"
                 
            return ChatResponse(reply=reply_content.strip())
            
+       except httpx.HTTPStatusError as e:
+           logger.error(f"HTTP error from AnythingLLM: {e.response.status_code} - {e.response.text}")
+           raise HTTPException(status_code=e.response.status_code, detail=f"Error from LLM service: {e.response.text}")
+       except httpx.RequestError as e:
+           logger.error(f"Request error to AnythingLLM: {e}")
+           raise HTTPException(status_code=503, detail=f"LLM service unavailable: {str(e)}")
        except Exception as e:
-           logger.error(f"Error in chat endpoint: {e}")
+           logger.error(f"Error in chat endpoint: {e}", exc_info=True)
            raise HTTPException(status_code=500, detail="内部服务器错误")
    ```
 
