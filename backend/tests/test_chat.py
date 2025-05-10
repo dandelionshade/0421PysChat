@@ -14,6 +14,9 @@ def mock_anythingllm_response():
     return {
         "text": "这是一个模拟的回复，用于测试聊天API。"
     }
+    
+    
+    
 
 # 测试聊天API端点
 @patch("httpx.AsyncClient.post")

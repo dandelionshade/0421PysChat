@@ -1,3 +1,4 @@
+# If "Import pytest could not be resolved", ensure pytest is installed in your Python environment (e.g., pip install pytest).
 import pytest
 from fastapi.testclient import TestClient
 from unittest.mock import patch, MagicMock
