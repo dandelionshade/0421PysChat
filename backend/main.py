@@ -85,6 +85,7 @@ app.add_middleware( # 添加中间件
 # Pydantic models # Pydantic模型定义
 class ChatRequest(BaseModel): # 定义聊天请求的数据模型
     message: str # 消息内容，类型为字符串
+    session_id: Optional[str] = None # Optional session ID for threaded conversations
 
 class ChatResponse(BaseModel): # 定义聊天响应的数据模型
     reply: str # 响应内容，类型为字符串
@@ -114,11 +115,9 @@ async def chat(
     request: ChatRequest,
     client: Annotated[httpx.AsyncClient, Depends(get_http_client)] # Use Depends for the client
 ):
-    if not WORKSPACE_SLUG or not ANYTHINGLLM_BASE_URL: # Double check, though validated at startup
+    if not WORKSPACE_SLUG or not ANYTHINGLLM_BASE_URL:
         logger.error("AnythingLLM URL or workspace not configured properly.")
         raise HTTPException(status_code=500, detail="AnythingLLM service not configured")
-
-    anything_llm_url = f"{ANYTHINGLLM_BASE_URL}/api/v1/workspace/{WORKSPACE_SLUG}/chat"
 
     headers = {"Content-Type": "application/json"}
     if ANYTHINGLLM_API_KEY:
@@ -126,34 +125,81 @@ async def chat(
 
     payload = {
         "message": request.message,
-        "mode": "chat" # Ensure this mode is correct for your AnythingLLM version
+        # "mode": "chat" # Mode might not be needed for thread chat, or might be different. Consult API.
+                       # For general workspace chat, it was "chat".
     }
 
+    anything_llm_url = ""
+    current_thread_id = None
+    db_conn = None
+
     try:
-        logger.info(f"Sending request to AnythingLLM: {anything_llm_url} with payload: {{message: '{request.message[:50]}...', mode: 'chat'}}") # Log truncated message
+        if request.session_id:
+            logger.info(f"Chat request for session_id: {request.session_id}")
+            db_conn = get_db_connection()
+            with db_conn.cursor() as cursor:
+                cursor.execute("SELECT anythingllm_thread_id FROM chat_sessions WHERE id = %s", (request.session_id,))
+                session_row = cursor.fetchone()
+
+                if session_row and session_row.get("anythingllm_thread_id"):
+                    current_thread_id = session_row["anythingllm_thread_id"]
+                    logger.info(f"Found existing AnythingLLM thread_id: {current_thread_id} for session_id: {request.session_id}")
+                else:
+                    # Create a new thread in AnythingLLM
+                    new_thread_url = f"{ANYTHINGLLM_BASE_URL}/api/v1/workspace/{WORKSPACE_SLUG}/thread/new"
+                    logger.info(f"No existing thread_id found. Creating new thread via: {new_thread_url}")
+                    # The payload for new thread creation might be empty or require specific fields.
+                    # Assuming empty payload or just a name if supported.
+                    # For now, sending an empty JSON payload. Adjust if API requires specific fields.
+                    new_thread_response = await client.post(new_thread_url, json={}, headers=headers)
+                    new_thread_response.raise_for_status()
+                    thread_data = new_thread_response.json()
+                    
+                    # IMPORTANT: Adjust "slug" if the actual key for thread ID in response is different (e.g., "id")
+                    current_thread_id = thread_data.get("slug") 
+                    if not current_thread_id:
+                        logger.error(f"Failed to get 'slug' (threadId) from new thread response: {thread_data}")
+                        raise HTTPException(status_code=500, detail="Failed to create or retrieve thread ID from LLM service.")
+                    logger.info(f"Created new AnythingLLM thread_id: {current_thread_id}")
+
+                    # Save/update chat_sessions table
+                    if session_row: # Session exists, update thread_id
+                        cursor.execute("UPDATE chat_sessions SET anythingllm_thread_id = %s, updated_at = CURRENT_TIMESTAMP WHERE id = %s",
+                                       (current_thread_id, request.session_id))
+                    else: # New session, insert
+                        cursor.execute("INSERT INTO chat_sessions (id, anythingllm_thread_id, name) VALUES (%s, %s, %s)",
+                                       (request.session_id, current_thread_id, f"Session {request.session_id[:8]}"))
+                    db_conn.commit()
+                    logger.info(f"Saved new thread_id {current_thread_id} for session_id {request.session_id} to database.")
+            
+            anything_llm_url = f"{ANYTHINGLLM_BASE_URL}/api/v1/workspace/{WORKSPACE_SLUG}/thread/{current_thread_id}/chat"
+            payload["mode"] = "chat" # Assuming thread chat also uses this mode, or remove if not needed.
+        
+        else: # No session_id, use general workspace chat
+            logger.info("No session_id provided, using general workspace chat.")
+            anything_llm_url = f"{ANYTHINGLLM_BASE_URL}/api/v1/workspace/{WORKSPACE_SLUG}/chat"
+            payload["mode"] = "chat" # Ensure this mode is correct for your AnythingLLM version
+
+        logger.info(f"Sending request to AnythingLLM: {anything_llm_url} with payload: {{message: '{request.message[:50]}...', mode: '{payload.get('mode')}'}}")
         response = await client.post(anything_llm_url, json=payload, headers=headers)
-        response.raise_for_status() # Raise an exception for HTTP errors (4xx or 5xx)
+        response.raise_for_status()
 
         result = response.json()
-        logger.debug(f"Raw response from AnythingLLM: {result}") # Use debug level for raw full response
+        logger.debug(f"Raw response from AnythingLLM: {result}")
 
-        # --- Refined Response Parsing (Consult AnythingLLM API docs for the exact structure) ---
-        # Example: Assuming the main text response is always in 'textResponse'
-        # Or, if it's nested like in older versions, you might look for `result.get('textResponse', {}).get('text')`
-        # For this example, let's assume a direct key, but you MUST verify this with AnythingLLM's docs.
         reply_content = None
         if "textResponse" in result and result["textResponse"] is not None:
             reply_content = result["textResponse"]
         elif "response" in result and isinstance(result["response"], dict) and "text" in result["response"] and result["response"]["text"] is not None:
-            # Fallback for a potentially older or different structure
             reply_content = result["response"]["text"]
+        # Check for thread-specific response structure if different
+        elif result.get("type") == "textResponse" and "text" in result.get("content", {}): # Example for a different structure
+             reply_content = result["content"]["text"]
         else:
-            # If you expect citations or other data, parse them here.
-            # For example: sources = result.get("sources", [])
             logger.warning(f"No standard 'textResponse' or 'response.text' found in AnythingLLM response. Full response: {result}")
             reply_content = "抱歉，无法从LLM服务获取到有效的文本回复内容。"
 
-        return ChatResponse(reply=str(reply_content).strip()) # Ensure reply is string
+        return ChatResponse(reply=str(reply_content).strip())
 
     except httpx.HTTPStatusError as e:
         error_body = e.response.text
@@ -171,8 +217,12 @@ async def chat(
         logger.error(f"HTTP request error to AnythingLLM: {e} - URL: {e.request.url if e.request else 'Unknown URL'}")
         raise HTTPException(status_code=503, detail=f"无法连接到LLM服务: {str(e)}")
     except Exception as e:
-        logger.exception(f"Unexpected error in chat endpoint: {e}") # Use logger.exception to include stack trace
+        logger.exception(f"Unexpected error in chat endpoint: {e}")
         raise HTTPException(status_code=500, detail=f"内部服务器错误: {str(e)}")
+    finally:
+        if db_conn:
+            db_conn.close()
+            logger.debug("Database connection closed for chat endpoint.")
 
 
 @app.get("/api/resources")

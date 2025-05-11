@@ -140,7 +140,10 @@ AnythingLLM 作为预置的 RAG 后端具有以下优势:
 8. **获取 API 信息**
    - 记录 AnythingLLM 的本地运行地址 (如 `http://localhost:3001`)
    - 获取 API Key (如果已设置)
-   - 确认聊天 API 路径 (如 `/api/v1/workspace/{workspace_slug}/chat`)
+   - 确认聊天 API 路径:
+     - 一般工作空间聊天: `/api/v1/workspace/{workspace_slug}/chat`
+     - 创建新聊天线程: `/api/v1/workspace/{workspace_slug}/thread/new`
+     - 在现有线程中聊天: `/api/v1/workspace/{workspace_slug}/thread/{thread_slug}/chat`
 
 ### 阶段二: 后端 API 调整 (FastAPI)
 
@@ -150,79 +153,109 @@ AnythingLLM 作为预置的 RAG 后端具有以下优势:
    - (建议) 添加 `python-logging` (通常是标准库，但确保配置)
 
 2. **修改聊天端点**
-   - 调整 `/api/chat` 端点，使其转发请求到 AnythingLLM API
+   - 调整 `/api/chat` 端点以支持线程化聊天，并使其转发请求到相应的 AnythingLLM API。
+   - `ChatRequest` Pydantic 模型更新，增加可选的 `session_id: Optional[str]` 字段，用于客户端传递会话标识。
 
    ```python
    # main.py (FastAPI backend)
-   # Ensure you have:
-   # import httpx
-   # import logging
-   # from pydantic import BaseModel
-   # from fastapi import FastAPI, HTTPException
-   # import os
-
-   # logger = logging.getLogger(__name__) # Configure logger as needed
-
-   # ANYTHINGLLM_API_BASE_URL = os.getenv("ANYTHINGLLM_API_BASE_URL")
-   # ANYTHINGLLM_WORKSPACE_SLUG = os.getenv("ANYTHINGLLM_WORKSPACE_SLUG")
-   # ANYTHINGLLM_API_KEY = os.getenv("ANYTHINGLLM_API_KEY")
+   # ... (确保导入必要的模块) ...
 
    # class ChatRequest(BaseModel):
    #     message: str
+   #     session_id: Optional[str] = None # 新增字段，用于会话管理
 
    # class ChatResponse(BaseModel):
-   #     reply: str # Changed from 'response' to 'reply'
+   #     reply: str
 
-   # app = FastAPI() # Assuming app is already defined
+   # ... (app, logger, 配置变量定义) ...
 
    @app.post("/api/chat", response_model=ChatResponse)
-   async def chat_endpoint(request: ChatRequest):
+   async def chat_endpoint(request: ChatRequest, client: httpx.AsyncClient = Depends(get_http_client)): # 示例依赖注入
        user_query = request.message
-       logger.info(f"Received query: {user_query}")
+       session_id = request.session_id
+       logger.info(f"Received query: {user_query}, session_id: {session_id}")
 
-       if not ANYTHINGLLM_WORKSPACE_SLUG:
-           logger.error("AnythingLLM workspace slug not configured.")
-           raise HTTPException(status_code=500, detail="Server configuration error: Workspace not set.")
+       if not ANYTHINGLLM_WORKSPACE_SLUG or not ANYTHINGLLM_API_BASE_URL:
+           logger.error("AnythingLLM URL or workspace slug not configured.")
+           raise HTTPException(status_code=500, detail="Server configuration error.")
 
-       anythingllm_chat_url = f"{ANYTHINGLLM_API_BASE_URL}/api/v1/workspace/{ANYTHINGLLM_WORKSPACE_SLUG}/chat"
-       
        headers = {
            "Content-Type": "application/json",
        }
        if ANYTHINGLLM_API_KEY:
            headers["Authorization"] = f"Bearer {ANYTHINGLLM_API_KEY}"
 
-       payload = {
-           "message": user_query,
-           "mode": "chat"  # Ensure 'mode' is 'chat'
-       }
+       payload = {"message": user_query}
+       anythingllm_chat_url = ""
+       db_conn = None # 假设 get_db_connection() 用于获取数据库连接
 
        try:
-           async with httpx.AsyncClient(timeout=60.0) as client: # Added timeout
-               response = await client.post(anythingllm_chat_url, headers=headers, json=payload)
-               response.raise_for_status()  # Raises an exception for 4XX/5XX responses
+           if session_id:
+               db_conn = get_db_connection()
+               with db_conn.cursor() as cursor:
+                   cursor.execute("SELECT anythingllm_thread_id FROM chat_sessions WHERE id = %s", (session_id,))
+                   session_row = cursor.fetchone()
+                   
+                   anythingllm_thread_id = None
+                   if session_row and session_row.get("anythingllm_thread_id"):
+                       anythingllm_thread_id = session_row["anythingllm_thread_id"]
+                       logger.info(f"Using existing thread_id: {anythingllm_thread_id} for session: {session_id}")
+                   else:
+                       # 创建新的 AnythingLLM 线程
+                       new_thread_url = f"{ANYTHINGLLM_API_BASE_URL}/api/v1/workspace/{ANYTHINGLLM_WORKSPACE_SLUG}/thread/new"
+                       # New thread payload might be empty or require a name, e.g., json={} or json={"name": "New Chat"}
+                       # Refer to AnythingLLM API docs for /thread/new payload
+                       new_thread_response = await client.post(new_thread_url, headers=headers, json={}) 
+                       new_thread_response.raise_for_status()
+                       thread_data = new_thread_response.json()
+                       anythingllm_thread_id = thread_data.get("slug") # Assuming 'slug' is the key for thread ID
+
+                       if not anythingllm_thread_id:
+                           raise HTTPException(status_code=500, detail="Failed to create or retrieve thread ID from LLM service.")
+                       
+                       # 将新的 anythingllm_thread_id 保存到 chat_sessions 表
+                       if session_row: # 更新现有会话
+                           cursor.execute("UPDATE chat_sessions SET anythingllm_thread_id = %s, updated_at = CURRENT_TIMESTAMP WHERE id = %s",
+                                          (anythingllm_thread_id, session_id))
+                       else: # 创建新会话记录
+                           cursor.execute("INSERT INTO chat_sessions (id, anythingllm_thread_id, name) VALUES (%s, %s, %s)",
+                                          (session_id, anythingllm_thread_id, f"Session {session_id[:8]}"))
+                       db_conn.commit()
+                       logger.info(f"Saved new thread_id {anythingllm_thread_id} for session {session_id}")
                
-           result = response.json()
-           logger.info(f"AnythingLLM response: {result}")
+               anythingllm_chat_url = f"{ANYTHINGLLM_API_BASE_URL}/api/v1/workspace/{ANYTHINGLLM_WORKSPACE_SLUG}/thread/{anythingllm_thread_id}/chat"
+               # payload["mode"] = "chat" # 'mode' might not be needed or different for thread chat
            
-           # Enhanced response parsing
-           reply_content = result.get("textResponse") or result.get("response", {}).get("text")
-           
-           if not reply_content:
-                logger.warning("No valid reply content from AnythingLLM.")
-                reply_content = "抱歉，无法获取有效回复。"
-                
-           return ChatResponse(reply=reply_content.strip())
-           
-       except httpx.HTTPStatusError as e:
-           logger.error(f"HTTP error from AnythingLLM: {e.response.status_code} - {e.response.text}")
-           raise HTTPException(status_code=e.response.status_code, detail=f"Error from LLM service: {e.response.text}")
-       except httpx.RequestError as e:
-           logger.error(f"Request error to AnythingLLM: {e}")
-           raise HTTPException(status_code=503, detail=f"LLM service unavailable: {str(e)}")
-       except Exception as e:
-           logger.error(f"Error in chat endpoint: {e}", exc_info=True)
-           raise HTTPException(status_code=500, detail="内部服务器错误")
+           else # 无 session_id，使用通用工作空间聊天
+               anythingllm_chat_url = f"{ANYTHINGLLM_API_BASE_URL}/api/v1/workspace/{ANYTHINGLLM_WORKSPACE_SLUG}/chat"
+               payload["mode"] = "chat" # Ensure 'mode' is 'chat' for general workspace chat
+
+           try:
+               async with httpx.AsyncClient(timeout=60.0) as client: # Added timeout
+                   response = await client.post(anythingllm_chat_url, headers=headers, json=payload)
+                   response.raise_for_status()  # Raises an exception for 4XX/5XX responses
+                   
+               result = response.json()
+               logger.info(f"AnythingLLM response: {result}")
+               
+               # Enhanced response parsing
+               reply_content = result.get("textResponse") or result.get("response", {}).get("text")
+               
+               if not reply_content:
+                    logger.warning("No valid reply content from AnythingLLM.")
+                    reply_content = "抱歉，无法获取有效回复。"
+                    
+               return ChatResponse(reply=reply_content.strip())
+               
+           except httpx.HTTPStatusError as e:
+               logger.error(f"HTTP error from AnythingLLM: {e.response.status_code} - {e.response.text}")
+               raise HTTPException(status_code=e.response.status_code, detail=f"Error from LLM service: {e.response.text}")
+           except httpx.RequestError as e:
+               logger.error(f"Request error to AnythingLLM: {e}")
+               raise HTTPException(status_code=503, detail=f"LLM service unavailable: {str(e)}")
+           except Exception as e:
+               logger.error(f"Error in chat endpoint: {e}", exc_info=True)
+               raise HTTPException(status_code=500, detail="内部服务器错误")
    ```
 
 3. **更新环境配置**
@@ -238,11 +271,16 @@ AnythingLLM 作为预置的 RAG 后端具有以下优势:
 
 ### 阶段四: 数据库设计
 
-保持原有 MySQL 数据库设计，主要用于:
+保持原有 MySQL 数据库设计，并对 `chat_sessions` 表进行扩展：
 
-1. 存储心理健康资源原始文本
-2. 提供资源导航数据
-3. (可选) 存储用户信息和应用配置
+1. **`chat_sessions` 表**:
+   - 新增 `anythingllm_thread_id VARCHAR(255) NULL` 列。
+   - **用途**: 存储从 AnythingLLM 创建新线程时返回的 `threadSlug` (或类似标识符)。这允许 PsyChat 的会话与 AnythingLLM 中的特定聊天线程关联起来，实现持久化和上下文连贯的对话。
+   - 添加索引 `idx_anythingllm_thread_id (anythingllm_thread_id)` 以优化查询。
+
+2. 存储心理健康资源原始文本
+3. 提供资源导航数据
+4. (可选) 存储用户信息和应用配置
 
 ## 数据流程
 
@@ -251,15 +289,25 @@ AnythingLLM 作为预置的 RAG 后端具有以下优势:
    - 上传到 AnythingLLM
    - AnythingLLM 处理并存储为向量
 
-2. **聊天流程**:
-   - 用户在前端发送消息
-   - 前端将消息发送到后端 `/api/chat`
-   - 后端转发到 AnythingLLM API
+2. **聊天流程 (支持线程化会话)**:
+   - 用户在前端发送消息，可选地附带一个 `session_id`。
+   - 前端将消息和 `session_id` (如果存在) 发送到后端 `/api/chat`。
+   - **后端逻辑**:
+     - **如果提供了 `session_id`**:
+       1. 后端查询 `chat_sessions` 表，查找与此 `session_id` 关联的 `anythingllm_thread_id`。
+       2. **如果找到 `anythingllm_thread_id`**: 后端将用户消息发送到 AnythingLLM 的特定线程聊天API (`.../thread/{thread_id}/chat`)。
+       3. **如果未找到 `anythingllm_thread_id` (或会话是新的)**:
+          a. 后端首先调用 AnythingLLM 的创建新线程 API (`.../thread/new`)。
+          b. 从响应中提取新的 `threadSlug` (即 `anythingllm_thread_id`)。
+          c. 将此 `session_id` 和新的 `anythingllm_thread_id` 存储/更新到 `chat_sessions` 表中。
+          d. 然后，将用户消息发送到新创建的线程的聊天 API (`.../thread/{new_thread_id}/chat`)。
+     - **如果未提供 `session_id`**: 后端将用户消息发送到 AnythingLLM 的通用工作空间聊天 API (`.../workspace/{workspace_slug}/chat`)，进行无状态的单轮对话。
    - AnythingLLM 执行:
-     - 将用户问题转为向量
-     - 在向量数据库中搜索相似内容
-     - 结合检索内容和 System Prompt 生成回复
-   - 回复返回给后端，再转发到前端
+     - (对于线程化聊天) 加载指定线程的上下文。
+     - 将用户问题转为向量。
+     - 在向量数据库中搜索相似内容。
+     - 结合检索内容、System Prompt (以及线程上下文) 生成回复。
+   - 回复返回给后端，再转发到前端。
 
 ## 部署考量
 
@@ -298,7 +346,9 @@ AnythingLLM 作为预置的 RAG 后端具有以下优势:
 1. **多语言支持**: 选择更适合中文的 embedding 模型
 2. **自定义插件**: 开发 AnythingLLM 插件扩展功能
 3. **反馈机制**: 实现用户反馈收集和模型响应调整
-4. **会话管理**: 利用 AnythingLLM 的会话持久化功能
+4. **高级会话管理**:
+    - **已初步实现**: 通过 `session_id` 和 `anythingllm_thread_id` 实现了后端对 AnythingLLM 聊天线程的关联。
+    - **待增强**: 前端UI支持会话列表、切换、重命名；更完善的会话超时和清理机制；后端支持列出用户会话等。
 5. **高级检索**: 探索 HyDE (Hypothetical Document Embeddings) 等技术
 
 ## 参考资源

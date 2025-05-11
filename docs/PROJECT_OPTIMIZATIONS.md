@@ -90,6 +90,21 @@
   * **操作**: 将前端所有源文件移至 `frontend/src/` 目录，并按功能划分子目录。
   * **原因**: 统一前端代码存放位置，按功能划分子目录，有助于代码的组织与管理。
 
+## 6. 近期功能增强 (截至最新更新)
+
+*   **线程化聊天支持**:
+    *   **后端 (`main.py`)**:
+        *   `ChatRequest` 模型已更新，包含可选的 `session_id`。
+        *   `/api/chat` 端点逻辑增强，以处理 `session_id`。
+        *   当提供 `session_id` 时，后端会：
+            1.  查询数据库 (`chat_sessions` 表) 以获取与 `session_id` 关联的 `anythingllm_thread_id`。
+            2.  如果存在，则使用 AnythingLLM 的 `/v1/workspace/{slug}/thread/{thread_id}/chat` 端点进行聊天。
+            3.  如果不存在，则调用 `/v1/workspace/{slug}/thread/new` 创建新线程，将返回的 `threadSlug` (作为 `anythingllm_thread_id`) 存储到数据库，并随后使用新线程进行聊天。
+        *   如果未提供 `session_id`，则回退到使用通用的 `/v1/workspace/{slug}/chat` 端点。
+    *   **数据库 (`init.sql`)**:
+        *   `chat_sessions` 表已添加 `anythingllm_thread_id` 列，用于存储 AnythingLLM 的线程标识符，并建立了相应索引。
+    *   **目的**: 此更改允许在多次交互中保持对话上下文，通过将 PsyChat 会话链接到 AnythingLLM 中的特定聊天线程。
+
 ## 总结
 
 通过移除冗余文件和过时文档，优化 `.gitignore` 配置，以及增强 `README.md`，项目结构变得更加清晰，文档与实际代码更加一致，有助于后续的开发和维护。
