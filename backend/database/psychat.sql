@@ -76,7 +76,84 @@ CREATE TABLE IF NOT EXISTS chat_messages (
   FOREIGN KEY (session_id) REFERENCES chat_sessions(id) ON DELETE CASCADE
 );
 
--- 创建数据库用户并授权 (仅生产环境使用，开发环境可注释掉)
--- CREATE USER IF NOT EXISTS 'psychat_app'@'%' IDENTIFIED BY 'StrongPasswordHere';
--- GRANT SELECT, INSERT, UPDATE, DELETE ON psychat.* TO 'psychat_app'@'%';
--- FLUSH PRIVILEGES;
+-- =============================================
+-- 生产环境配置
+-- =============================================
+
+-- 创建数据库用户并设置权限 (生产环境使用)
+-- 注意: 在实际部署时替换为强密码并使用环境变量或密钥管理系统存储
+CREATE USER IF NOT EXISTS 'psychat_app'@'%' IDENTIFIED BY 'StrongPasswordHere';
+CREATE USER IF NOT EXISTS 'psychat_readonly'@'%' IDENTIFIED BY 'ReadOnlyPasswordHere';
+
+-- 应用服务账户 - 只有必要权限
+GRANT SELECT, INSERT, UPDATE, DELETE ON psychat.resources TO 'psychat_app'@'%';
+GRANT SELECT, INSERT, UPDATE, DELETE ON psychat.feedback TO 'psychat_app'@'%';
+GRANT SELECT, INSERT, UPDATE, DELETE ON psychat.chat_sessions TO 'psychat_app'@'%';
+GRANT SELECT, INSERT, UPDATE, DELETE ON psychat.chat_messages TO 'psychat_app'@'%';
+
+-- 只读账户 - 用于报表和监控
+GRANT SELECT ON psychat.* TO 'psychat_readonly'@'%';
+
+FLUSH PRIVILEGES;
+
+-- =============================================
+-- 表优化 (生产环境)
+-- =============================================
+
+-- 优化长时间运行的表
+ALTER TABLE chat_messages ROW_FORMAT=COMPRESSED KEY_BLOCK_SIZE=8;
+ALTER TABLE resources ROW_FORMAT=COMPRESSED KEY_BLOCK_SIZE=8;
+
+-- 添加统计和监控表
+CREATE TABLE IF NOT EXISTS system_metrics (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  metric_name VARCHAR(50) NOT NULL,
+  metric_value FLOAT NOT NULL,
+  measured_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  
+  INDEX idx_metric_name (metric_name),
+  INDEX idx_measured_at (measured_at)
+);
+
+-- 添加数据库版本跟踪表 (用于管理迁移和升级)
+CREATE TABLE IF NOT EXISTS db_version (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  version VARCHAR(20) NOT NULL,
+  applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  description TEXT,
+  
+  UNIQUE INDEX idx_version (version)
+);
+
+INSERT INTO db_version (version, description) VALUES ('1.0.0', '初始数据库架构');
+
+-- =============================================
+-- 维护脚本说明 (生产环境)
+-- =============================================
+
+/*
+生产环境维护建议:
+
+1. 备份策略:
+   - 每日全量备份: mysqldump -u root -p --all-databases > /backup/psychat_full_$(date +\%Y\%m\%d).sql
+   - 增量备份: 配置二进制日志并定期备份
+   - 考虑使用自动化工具如Percona XtraBackup
+
+2. 监控:
+   - 设置监控系统监控连接数、查询性能、存储空间等
+   - 定期检查慢查询日志: slow_query_log = 1
+
+3. 性能优化:
+   - 为经常搜索的字段添加索引
+   - 优化大型表的innodb_buffer_pool_size
+   - 使用连接池减少频繁的连接创建/销毁
+
+4. 安全措施:
+   - 定期轮换数据库密码
+   - 限制数据库仅接受来自应用服务器的连接
+   - 启用SSL连接: require_secure_transport = ON
+
+5. 扩展策略:
+   - 考虑根据数据增长情况配置表分区
+   - 准备读写分离架构规划
+*/
