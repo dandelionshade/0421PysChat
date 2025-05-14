@@ -2,5 +2,6 @@ fastapi
 uvicorn[standard] # Includes standard dependencies like websockets and http tools
 python-dotenv
 pymysql
+cryptography  # 必须的依赖，用于MySQL 8.0+的SHA-256密码认证
 httpx
 pydantic

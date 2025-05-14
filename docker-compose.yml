@@ -23,6 +23,7 @@ services:
       - ANYTHINGLLM_API_BASE_URL=http://anythingllm:3001
       - ANYTHINGLLM_WORKSPACE_SLUG=${ANYTHINGLLM_WORKSPACE_SLUG:-mentalhealthbot}
       - ANYTHINGLLM_API_KEY=${ANYTHINGLLM_API_KEY}
+      - HTTPX_TIMEOUT=60.0
       - DB_HOST=db
       - DB_PORT=3306
       - DB_USER=${MYSQL_USER:-psychat_app}

@@ -31,7 +31,8 @@
     <meta property="twitter:image" content="/og-image.jpg" /> <!-- Image shown when shared on Twitter -->
     
     <!-- Performance optimization: preconnect to API server -->
-    <link rel="preconnect" href="http://127.0.0.1:8000" crossorigin /> <!-- Establishes early connection to API server -->
+    <link rel="preconnect" href="http://127.0.0.1:8000" crossorigin /> <!-- FastAPI backend -->
+    <link rel="preconnect" href="http://localhost:3001" crossorigin /> <!-- AnythingLLM API server -->
     
     <!-- Initial loading styles to show before Vue loads -->
     <style>

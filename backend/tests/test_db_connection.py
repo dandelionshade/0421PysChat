@@ -66,11 +66,31 @@ def test_db_connection():
         logger.error(f"数据库测试断言失败: {e}")
         return False
     except Exception as e:
-        logger.error(f"数据库测试中发生未知错误: {e}")
+        error_str = str(e)
+        if "cryptography" in error_str and "required" in error_str:
+            logger.error("缺少加密库: MySQL 8.0+ 的身份验证需要 'cryptography' 包")
+            logger.error("请运行: pip install cryptography")
+        else:
+            logger.error(f"数据库测试中发生未知错误: {e}")
         return False
 
 if __name__ == "__main__":
     """当直接运行此脚本时执行测试"""
+    # 检查是否已安装关键依赖
+    try:
+        import pymysql
+    except ImportError:
+        print("❌ 缺少 pymysql 包。请运行: pip install pymysql")
+        sys.exit(1)
+        
+    try:
+        import cryptography
+        print("✓ cryptography 包已安装")
+    except ImportError:
+        print("❌ 缺少 cryptography 包。MySQL 8.0+ 身份验证需要此包。")
+        print("请运行: pip install cryptography")
+        sys.exit(1)
+        
     success = test_db_connection()
     if success:
         print("✅ 数据库连接测试成功！")

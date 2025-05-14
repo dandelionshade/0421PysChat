@@ -9,6 +9,21 @@ const api = axios.create({ // 调用axios.create方法创建一个新的axios实
   timeout: 30000, // 30 second timeout (LLM responses can be slow) // 设置请求超时时间为30000毫秒（30秒），考虑到LLM响应可能较慢
 }); // axios实例创建结束
 
+// Optional: Direct AnythingLLM API client for advanced usage
+const anythingLLMApi = axios.create({
+  baseURL: '/v1', // Uses the vite proxy for AnythingLLM API
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  timeout: 30000,
+});
+
+// Add authentication for AnythingLLM API if API key is available
+const anythingLLMApiKey = import.meta.env.VITE_ANYTHINGLLM_API_KEY;
+if (anythingLLMApiKey) {
+  anythingLLMApi.defaults.headers.common['Authorization'] = `Bearer ${anythingLLMApiKey}`;
+}
+
 export default { // 导出包含API方法的对象
   // Chat API // 聊天相关的API
   sendMessage(message) { // 定义sendMessage方法，用于发送聊天消息

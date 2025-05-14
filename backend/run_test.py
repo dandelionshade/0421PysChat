@@ -61,7 +61,8 @@ def check_database():
             port=db_port,
             user=db_user,
             password=db_password,
-            database=db_name
+            database=db_name,
+            cursorclass=pymysql.cursors.DictCursor
         )
         
         # Execute a simple query
@@ -79,14 +80,49 @@ def check_database():
 
 def start_test_server():
     """Start the backend server in test mode"""
+    # 配置Uvicorn日志记录
+    log_config = {
+        "version": 1,
+        "disable_existing_loggers": False,
+        "formatters": {
+            "default": {
+                "()": "uvicorn.logging.DefaultFormatter",
+                "fmt": "%(levelprefix)s %(asctime)s - %(message)s",
+                "use_colors": True
+            },
+            "access": {
+                "()": "uvicorn.logging.AccessFormatter",
+                "fmt": '%(levelprefix)s %(asctime)s - %(client_addr)s - "%(request_line)s" %(status_code)s',
+                "use_colors": True
+            }
+        },
+        "handlers": {
+            "default": {
+                "formatter": "default",
+                "class": "logging.StreamHandler",
+                "stream": "ext://sys.stderr"
+            },
+            "access": {
+                "formatter": "access",
+                "class": "logging.StreamHandler",
+                "stream": "ext://sys.stdout"
+            }
+        },
+        "loggers": {
+            "uvicorn": {"handlers": ["default"], "level": "INFO"},
+            "uvicorn.error": {"level": "INFO"},
+            "uvicorn.access": {"handlers": ["access"], "level": "INFO", "propagate": False}
+        }
+    }
+    
     server_port = int(os.getenv("SERVER_PORT", "8000"))
     logger.info(f"Starting test server on port {server_port}")
     uvicorn.run(
         "main:app", 
         host="0.0.0.0", 
-        port=server_port,
+        port=server_port, 
         reload=True,
-        log_level="info"
+        log_config=log_config
     )
 
 if __name__ == "__main__":

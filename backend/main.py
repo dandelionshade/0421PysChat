@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Query, Depends # 导入构建API所需的FastAPI、HTTPException、Query和Depends
+from fastapi import FastAPI, HTTPException, Query, Depends, Request # 添加Request导入
 from fastapi.middleware.cors import CORSMiddleware # 导入CORS中间件，用于处理跨域请求
 from pydantic import BaseModel # 导入Pydantic的BaseModel，用于定义请求体和响应体的数据模型
 from typing import List, Optional, Dict, Any, Annotated # 导入Python类型提示工具
@@ -9,6 +9,8 @@ from dotenv import load_dotenv # 导入load_dotenv函数，用于从.env文件�
 import logging # Import logging module
 import datetime # Import datetime module for timestamp
 from fastapi.responses import JSONResponse
+from fastapi.exceptions import RequestValidationError # 添加此导入
+from starlette.exceptions import HTTPException as StarletteHTTPException # 添加此导入
 
 # Configure basic logging # 配置基本日志记录
 logging.basicConfig(level=logging.INFO) # 设置日志级别为INFO
@@ -53,18 +55,14 @@ async def startup_event():
     Initialize the httpx.AsyncClient when the application starts.
     Also, validate essential configurations.
     """
-    global http_client
     app.state.http_client = httpx.AsyncClient(timeout=HTTPX_TIMEOUT)
     logger.info(f"HTTPX Client initialized with timeout: {HTTPX_TIMEOUT}s")
 
     if not ANYTHINGLLM_BASE_URL:
         logger.error("CRITICAL: ANYTHINGLLM_API_BASE_URL is not configured.")
-        # You might want to raise an exception here or prevent app startup
     if not WORKSPACE_SLUG:
         logger.error("CRITICAL: ANYTHINGLLM_WORKSPACE_SLUG is not configured.")
-        # You might want to raise an exception here or prevent app startup
     logger.info("Application startup: Configurations loaded.")
-
 
 @app.on_event("shutdown")
 async def shutdown_event():
@@ -121,14 +119,16 @@ async def chat(
         logger.error("AnythingLLM URL or workspace not configured properly.")
         raise HTTPException(status_code=500, detail="AnythingLLM service not configured")
 
-    headers = {"Content-Type": "application/json"}
+    # Set up proper headers according to API documentation
+    headers = {
+        "Content-Type": "application/json",
+    }
     if ANYTHINGLLM_API_KEY:
         headers["Authorization"] = f"Bearer {ANYTHINGLLM_API_KEY}"
 
+    # Structure payload according to API docs
     payload = {
         "message": request.message,
-        # "mode": "chat" # Mode might not be needed for thread chat, or might be different. Consult API.
-                       # For general workspace chat, it was "chat".
     }
 
     anything_llm_url = ""
@@ -145,61 +145,57 @@ async def chat(
 
                 if session_row and session_row.get("anythingllm_thread_id"):
                     current_thread_id = session_row["anythingllm_thread_id"]
-                    logger.info(f"Found existing AnythingLLM thread_id: {current_thread_id} for session_id: {request.session_id}")
+                    logger.info(f"Found existing thread_id: {current_thread_id}")
                 else:
-                    # Create a new thread in AnythingLLM
-                    new_thread_url = f"{ANYTHINGLLM_BASE_URL}/api/v1/workspace/{WORKSPACE_SLUG}/thread/new"
-                    logger.info(f"No existing thread_id found. Creating new thread via: {new_thread_url}")
-                    # The payload for new thread creation might be empty or require specific fields.
-                    # Assuming empty payload or just a name if supported.
-                    # For now, sending an empty JSON payload. Adjust if API requires specific fields.
+                    # Create a new thread using the proper API endpoint format
+                    new_thread_url = f"{ANYTHINGLLM_BASE_URL}/v1/workspace/{WORKSPACE_SLUG}/thread/new"
+                    logger.info(f"Creating new thread via: {new_thread_url}")
+                    
                     new_thread_response = await client.post(new_thread_url, json={}, headers=headers)
                     new_thread_response.raise_for_status()
                     thread_data = new_thread_response.json()
                     
-                    # IMPORTANT: Adjust "slug" if the actual key for thread ID in response is different (e.g., "id")
-                    current_thread_id = thread_data.get("slug") 
+                    # Extract thread ID/slug from response according to API format
+                    current_thread_id = thread_data.get("threadSlug") or thread_data.get("slug")
                     if not current_thread_id:
-                        logger.error(f"Failed to get 'slug' (threadId) from new thread response: {thread_data}")
-                        raise HTTPException(status_code=500, detail="Failed to create or retrieve thread ID from LLM service.")
-                    logger.info(f"Created new AnythingLLM thread_id: {current_thread_id}")
-
-                    # Save/update chat_sessions table
-                    if session_row: # Session exists, update thread_id
+                        logger.error(f"Failed to get thread ID from response: {thread_data}")
+                        raise HTTPException(status_code=500, detail="Failed to create thread")
+                    
+                    # Save thread ID to database
+                    if session_row:
                         cursor.execute("UPDATE chat_sessions SET anythingllm_thread_id = %s, updated_at = CURRENT_TIMESTAMP WHERE id = %s",
-                                       (current_thread_id, request.session_id))
-                    else: # New session, insert
+                                      (current_thread_id, request.session_id))
+                    else:
                         cursor.execute("INSERT INTO chat_sessions (id, anythingllm_thread_id, name) VALUES (%s, %s, %s)",
-                                       (request.session_id, current_thread_id, f"Session {request.session_id[:8]}"))
+                                      (request.session_id, current_thread_id, f"Session {request.session_id[:8]}"))
                     db_conn.commit()
-                    logger.info(f"Saved new thread_id {current_thread_id} for session_id {request.session_id} to database.")
             
-            anything_llm_url = f"{ANYTHINGLLM_BASE_URL}/api/v1/workspace/{WORKSPACE_SLUG}/thread/{current_thread_id}/chat"
-            payload["mode"] = "chat" # Assuming thread chat also uses this mode, or remove if not needed.
+            # Use the thread-specific chat endpoint format
+            anything_llm_url = f"{ANYTHINGLLM_BASE_URL}/v1/workspace/{WORKSPACE_SLUG}/thread/{current_thread_id}/chat"
         
         else: # No session_id, use general workspace chat
-            logger.info("No session_id provided, using general workspace chat.")
-            anything_llm_url = f"{ANYTHINGLLM_BASE_URL}/api/v1/workspace/{WORKSPACE_SLUG}/chat"
-            payload["mode"] = "chat" # Ensure this mode is correct for your AnythingLLM version
+            logger.info("Using general workspace chat")
+            anything_llm_url = f"{ANYTHINGLLM_BASE_URL}/v1/workspace/{WORKSPACE_SLUG}/chat"
+            payload["mode"] = "chat"
 
-        logger.info(f"Sending request to AnythingLLM: {anything_llm_url} with payload: {{message: '{request.message[:50]}...', mode: '{payload.get('mode')}'}}")
+        logger.info(f"Sending request to: {anything_llm_url}")
         response = await client.post(anything_llm_url, json=payload, headers=headers)
         response.raise_for_status()
 
         result = response.json()
-        logger.debug(f"Raw response from AnythingLLM: {result}")
+        logger.debug(f"Raw response: {result}")
 
+        # Parse response according to API format
         reply_content = None
-        if "textResponse" in result and result["textResponse"] is not None:
+        if "textResponse" in result:
             reply_content = result["textResponse"]
-        elif "response" in result and isinstance(result["response"], dict) and "text" in result["response"] and result["response"]["text"] is not None:
+        elif "response" in result and "text" in result["response"]:
             reply_content = result["response"]["text"]
-        # Check for thread-specific response structure if different
-        elif result.get("type") == "textResponse" and "text" in result.get("content", {}): # Example for a different structure
-             reply_content = result["content"]["text"]
+        elif result.get("type") == "textResponse" and "text" in result.get("content", {}):
+            reply_content = result["content"]["text"]
         else:
-            logger.warning(f"No standard 'textResponse' or 'response.text' found in AnythingLLM response. Full response: {result}")
-            reply_content = "抱歉，无法从LLM服务获取到有效的文本回复内容。"
+            logger.warning(f"Unexpected response format: {result}")
+            reply_content = "抱歉，无法获取有效回复内容。"
 
         return ChatResponse(reply=str(reply_content).strip())
 
@@ -323,6 +319,57 @@ async def health_check():
         )
     
     return health_status
+
+# 添加自定义404处理程序
+@app.exception_handler(404)
+async def custom_404_handler(request: Request, exc: StarletteHTTPException):
+    """自定义404处理程序，记录详细的请求信息"""
+    path = request.url.path
+    method = request.method
+    client = f"{request.client.host}:{request.client.port}" if request.client else "Unknown"
+    query = str(request.query_params) if request.query_params else ""
+    
+    # Improved logging for empty path
+    log_message = f"404 NOT FOUND: {method} {path if path else '[EMPTY PATH]'}?{query} - 客户端: {client}"
+    if not path: # Path is empty string
+        log_message += " - 注意: 请求路径为空。这通常表示客户端发送了格式不正确的HTTP请求 (例如，请求行可能是 'GET HTTP/1.1' 而不是 'GET / HTTP/1.1')。"
+    logger.warning(log_message)
+    
+    response_content = {
+        "detail": "请求的路径不存在",
+        "path": path, # Will be empty string if path was empty
+        "method": method,
+        "available_endpoints": [
+            "/",
+            "/health",
+            "/api/chat",
+            "/api/resources",
+            "/docs",  # 添加Swagger文档路径
+            "/redoc"  # 添加ReDoc文档路径
+        ]
+    }
+    # Add specific suggestion if path was empty
+    if not path:
+        response_content["error_suggestion"] = "检测到请求路径为空。请确保客户端发送的HTTP请求包含一个有效的路径，例如 '/' 代表根路径。"
+
+    return JSONResponse(
+        status_code=404,
+        content=response_content
+    )
+
+# 添加验证错误处理程序
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    """自定义请求验证错误处理程序"""
+    logger.warning(f"请求验证错误: {request.method} {request.url.path} - {exc}")
+    return JSONResponse(
+        status_code=422,
+        content={
+            "detail": "请求数据验证失败",
+            "errors": exc.errors(),
+            "body": exc.body
+        }
+    )
 
 if __name__ == "__main__":
     import uvicorn
@@ -465,92 +512,8 @@ if __name__ == "__main__":
 #                 query += " AND category = %s" # 在查询中添加按category过滤的条件
 #                 params.append(category) # 将category值添加到参数列表
                 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True) # Changed host to 0.0.0.0 to be accessible externally if needed#     # For production, you might want to set reload=False and adjust workers#     import uvicorn# if __name__ == "__main__":#     return health_status    #         )#             status_code=503  # Service Unavailable#             content=health_status,#         return JSONResponse(#     if health_status["status"] != "ok":#     # 根据状态设置正确的HTTP响应码    #         health_status["status"] = "degraded"#         health_status["database_error"] = str(e)#         health_status["database"] = "unhealthy"#         logger.error(f"Health check - Database connection error: {e}")#     except Exception as e:#         conn.close()#                 health_status["status"] = "degraded"#                 health_status["database"] = "unhealthy"#             else:#                 health_status["database"] = "healthy"#             if result and 1 in result.values():#             result = cursor.fetchone()#             cursor.execute("SELECT 1")#         with conn.cursor() as cursor:#         conn = get_db_connection()#     try:#     # 测试数据库连接    #     }#         "version": "1.0.0"  # 可以从应用配置或版本文件中获取#         "timestamp": datetime.datetime.now().isoformat(),#         "database": "unknown",#         "api": "healthy",#         "status": "ok",#     health_status = {#     """#         dict: 包含API和数据库状态的字典#     返回:#     健康检查端点，用于验证API和数据库连接状态#     """# async def health_check():# @app.get("/health") # 定义健康检查的GET请求处理函数#             conn.close()#         if conn: # Ensure conn is not None before closing#     finally:#         raise HTTPException(status_code=500, detail=f"获取资源时发生内部服务器错误: {str(e)}")#         logger.exception(f"Unexpected error in get_resources endpoint: {e}")#     except Exception as e:#         raise HTTPException(status_code=500, detail=f"数据库查询错误: {str(e)}")#         logger.error(f"Error querying database: {e}")#     except pymysql.MySQLError as e: # More specific exception for DB errors#             return processed_resources#                 processed_resources.append(processed_row)#                         processed_row[key] = value#                     else:#                         processed_row[key] = float(value)#                     elif hasattr(value, 'quantize'): # Check for Decimal type#                             processed_row[key] = repr(value) # Fallback for non-utf8 bytes#                             logger.warning(f"Could not decode bytes to utf-8 for key '{key}'. Storing as repr.")#                         except UnicodeDecodeError:#                             processed_row[key] = value.decode('utf-8')#                         try:#                     if isinstance(value, bytes):#                 for key, value in resource_row.items():#                 processed_row = {}#             for resource_row in resources_data:#             processed_resources = []#             # Convert decimal types to float and bytes to string for JSON serialization            #             resources_data = cursor.fetchall() # 获取所有匹配的记录#             cursor.execute(query, tuple(params)) # 执行查询#             logger.debug(f"Executing DB query: {query} with params: {params}")#             params.append(limit) # 将limit值添加到参数列表#             query += " ORDER BY created_at DESC LIMIT %s" # 在查询中添加排序和限制条件#                 params.append(location) # 将location值添加到参数列表#                 query += " AND location_tag = %s" # 在查询中添加按location_tag过滤的条件#             if location: # 如果提供了location查询参数#                 query += " AND location_tag = %s" # 在查询中添加按location_tag过滤的条件
+#             if location: # 如果提供了location查询参数
+#                 query += " AND location_tag = %s" # 在查询中添加按location_tag过滤的条件
 #                 params.append(location) # 将location值添加到参数列表
                 
 #             query += " ORDER BY created_at DESC LIMIT %s" # 在查询中添加按创建时间倒序排序和限制数量的条件

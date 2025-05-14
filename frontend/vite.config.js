@@ -10,7 +10,12 @@ export default defineConfig({ // 导出Vite配置对象
       '/api': { // 匹配/api开头的请求路径
         target: 'http://127.0.0.1:8000', // Your backend address // 目标地址是FastAPI后端运行的地址
         changeOrigin: true, // 改变请求的源，使其与目标地址一致
-      } // 代理配置结束
+      }, // 代理配置结束
+      // Optional: Direct proxy for AnythingLLM API
+      '/v1': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+      }
     } // proxy配置结束
   } // server配置结束
 }) // defineConfig结束
