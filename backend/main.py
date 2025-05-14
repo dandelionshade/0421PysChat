@@ -7,6 +7,8 @@ import pymysql # 导入pymysql库，用于连接MySQL数据库
 import os # 导入os模块，用于访问环境变量
 from dotenv import load_dotenv # 导入load_dotenv函数，用于从.env文件加载环境变量
 import logging # Import logging module
+import datetime # Import datetime module for timestamp
+from fastapi.responses import JSONResponse
 
 # Configure basic logging # 配置基本日志记录
 logging.basicConfig(level=logging.INFO) # 设置日志级别为INFO
@@ -280,6 +282,48 @@ async def get_resources(
         if conn: # Ensure conn is not None before closing
             conn.close()
 
+@app.get("/health")
+async def health_check():
+    """
+    健康检查端点，用于验证API和数据库连接状态
+    返回:
+        dict: 包含API和数据库状态的字典
+    """
+    health_status = {
+        "status": "ok",
+        "api": "healthy",
+        "database": "unknown",
+        "timestamp": datetime.datetime.now().isoformat(),
+        "version": "1.0.0"  # 可以从应用配置或版本文件中获取
+    }
+    
+    # 测试数据库连接
+    try:
+        conn = get_db_connection()
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT 1")
+            result = cursor.fetchone()
+            if result and 1 in result.values():
+                health_status["database"] = "healthy"
+            else:
+                health_status["database"] = "unhealthy"
+                health_status["status"] = "degraded"
+        conn.close()
+    except Exception as e:
+        logger.error(f"Health check - Database connection error: {e}")
+        health_status["database"] = "unhealthy"
+        health_status["database_error"] = str(e)
+        health_status["status"] = "degraded"
+    
+    # 根据状态设置正确的HTTP响应码
+    if health_status["status"] != "ok":
+        return JSONResponse(
+            content=health_status,
+            status_code=503  # Service Unavailable
+        )
+    
+    return health_status
+
 if __name__ == "__main__":
     import uvicorn
     # For production, you might want to set reload=False and adjust workers
@@ -421,8 +465,92 @@ if __name__ == "__main__":
 #                 query += " AND category = %s" # 在查询中添加按category过滤的条件
 #                 params.append(category) # 将category值添加到参数列表
                 
-#             if location: # 如果提供了location查询参数
-#                 query += " AND location_tag = %s" # 在查询中添加按location_tag过滤的条件
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True) # Changed host to 0.0.0.0 to be accessible externally if needed#     # For production, you might want to set reload=False and adjust workers#     import uvicorn# if __name__ == "__main__":#     return health_status    #         )#             status_code=503  # Service Unavailable#             content=health_status,#         return JSONResponse(#     if health_status["status"] != "ok":#     # 根据状态设置正确的HTTP响应码    #         health_status["status"] = "degraded"#         health_status["database_error"] = str(e)#         health_status["database"] = "unhealthy"#         logger.error(f"Health check - Database connection error: {e}")#     except Exception as e:#         conn.close()#                 health_status["status"] = "degraded"#                 health_status["database"] = "unhealthy"#             else:#                 health_status["database"] = "healthy"#             if result and 1 in result.values():#             result = cursor.fetchone()#             cursor.execute("SELECT 1")#         with conn.cursor() as cursor:#         conn = get_db_connection()#     try:#     # 测试数据库连接    #     }#         "version": "1.0.0"  # 可以从应用配置或版本文件中获取#         "timestamp": datetime.datetime.now().isoformat(),#         "database": "unknown",#         "api": "healthy",#         "status": "ok",#     health_status = {#     """#         dict: 包含API和数据库状态的字典#     返回:#     健康检查端点，用于验证API和数据库连接状态#     """# async def health_check():# @app.get("/health") # 定义健康检查的GET请求处理函数#             conn.close()#         if conn: # Ensure conn is not None before closing#     finally:#         raise HTTPException(status_code=500, detail=f"获取资源时发生内部服务器错误: {str(e)}")#         logger.exception(f"Unexpected error in get_resources endpoint: {e}")#     except Exception as e:#         raise HTTPException(status_code=500, detail=f"数据库查询错误: {str(e)}")#         logger.error(f"Error querying database: {e}")#     except pymysql.MySQLError as e: # More specific exception for DB errors#             return processed_resources#                 processed_resources.append(processed_row)#                         processed_row[key] = value#                     else:#                         processed_row[key] = float(value)#                     elif hasattr(value, 'quantize'): # Check for Decimal type#                             processed_row[key] = repr(value) # Fallback for non-utf8 bytes#                             logger.warning(f"Could not decode bytes to utf-8 for key '{key}'. Storing as repr.")#                         except UnicodeDecodeError:#                             processed_row[key] = value.decode('utf-8')#                         try:#                     if isinstance(value, bytes):#                 for key, value in resource_row.items():#                 processed_row = {}#             for resource_row in resources_data:#             processed_resources = []#             # Convert decimal types to float and bytes to string for JSON serialization            #             resources_data = cursor.fetchall() # 获取所有匹配的记录#             cursor.execute(query, tuple(params)) # 执行查询#             logger.debug(f"Executing DB query: {query} with params: {params}")#             params.append(limit) # 将limit值添加到参数列表#             query += " ORDER BY created_at DESC LIMIT %s" # 在查询中添加排序和限制条件#                 params.append(location) # 将location值添加到参数列表#                 query += " AND location_tag = %s" # 在查询中添加按location_tag过滤的条件#             if location: # 如果提供了location查询参数#                 query += " AND location_tag = %s" # 在查询中添加按location_tag过滤的条件
 #                 params.append(location) # 将location值添加到参数列表
                 
 #             query += " ORDER BY created_at DESC LIMIT %s" # 在查询中添加按创建时间倒序排序和限制数量的条件
