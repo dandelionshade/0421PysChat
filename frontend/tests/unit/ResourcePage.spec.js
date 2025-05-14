@@ -11,11 +11,30 @@ vi.mock('../../src/services/api', () => ({
 }))
 
 // 模拟Element Plus组件
-vi.mock('element-plus', () => ({
-  ElMessage: {
-    error: vi.fn()
+vi.mock('element-plus', async () => {
+  const actual = await vi.importActual('element-plus')
+  return {
+    ...actual,
+    ElMessage: {
+      error: vi.fn()
+    },
+    ElCard: {
+      name: 'ElCard'
+    },
+    ElTag: {
+      name: 'ElTag'
+    },
+    ElForm: {
+      name: 'ElForm'
+    },
+    ElSelect: {
+      name: 'ElSelect'
+    },
+    ElButton: {
+      name: 'ElButton'
+    }
   }
-}))
+})
 
 describe('ResourcePage.vue', () => {
   let wrapper;

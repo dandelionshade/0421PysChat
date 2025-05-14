@@ -11,11 +11,21 @@ vi.mock('../../src/services/api', () => ({
 }))
 
 // 模拟Element Plus组件
-vi.mock('element-plus', () => ({
-  ElMessage: {
-    error: vi.fn()
+vi.mock('element-plus', async () => {
+  const actual = await vi.importActual('element-plus')
+  return {
+    ...actual,
+    ElMessage: {
+      error: vi.fn()
+    },
+    ElInput: {
+      name: 'ElInput'
+    },
+    ElButton: {
+      name: 'ElButton'
+    }
   }
-}))
+})
 
 describe('ChatView.vue', () => {
   let wrapper;

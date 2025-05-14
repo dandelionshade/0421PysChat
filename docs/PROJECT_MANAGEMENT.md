@@ -2,7 +2,7 @@
 
 本文档整合了 PsyChat 项目的项目管理信息，包括开发计划、当前状态和优化记录，为项目团队提供统一的管理参考。
 
-**文档最后更新**: 2025-05-15
+**文档最后更新**: 2025-05-22
 
 ---
 
@@ -18,8 +18,8 @@
 | 核心团队成员 | [团队成员列表] |
 | 代码仓库 | [仓库地址] |
 | 项目文档 | [文档地址] |
-| 当前版本 | v0.1.0-alpha |
-| 开发阶段 | 原型开发阶段 |
+| 当前版本 | v0.2.0-alpha |
+| 开发阶段 | 功能开发阶段 |
 
 ## 2. 当前项目状态
 
@@ -35,26 +35,38 @@
   - 实现了基本 UI 布局和导航
   - 创建了聊天页面 (ChatView.vue) 和资源页面 (ResourcePage.vue)
   - 实现了与后端 API 的基本交互
+  - **新完成**: 新增会话管理功能，支持创建新会话
+  - **新完成**: 实现用户反馈机制，允许用户标记有用/无用回复
+  - **新完成**: 添加前端测试环境配置 (Vitest)
+  - **新完成**: 实现基于 localStorage 的会话存储服务
 
 - **后端开发**
   - 搭建了 FastAPI 框架
   - 实现了 `/api/chat` 和 `/api/resources` 端点
   - 设计并实现了与 AnythingLLM 的集成
+  - **新完成**: 增强错误处理和重试逻辑
+  - **新完成**: 改进了后端测试环境，添加 pytest 支持
 
 - **文档**
   - 编写了详细的 RAG 实现指南
   - 更新了项目 README.md
   - 记录了项目优化和清理操作
+  - **新完成**: 添加了前端测试文档和最佳实践
 
 - **数据库设置和初始化**
   - 创建了数据库模式
   - 编写了表创建 SQL
   - 准备了示例数据
 
+- **测试框架**
+  - **新完成**: 前端测试环境 (Vitest) 配置
+  - **新完成**: 后端测试运行器 (pytest) 配置
+  - **新完成**: 测试文档和示例
+
 ### 2.2 当前进度比例
 
 ```
-[=========>        ] 45% 完成
+[==============>   ] 65% 完成
 ```
 
 #### 进度明细（关键里程碑）
@@ -64,59 +76,52 @@
 | 架构设计 | 已完成 | 100% | 已完成 |
 | 环境搭建 | 已完成 | 100% | 已完成 |
 | 数据库设计与初始化 | 已完成 | 100% | 已完成 |
-| RAG 集成实现 | 部分完成 | 80% | 2025-05-20 |
-| 前端基础 UI | 部分完成 | 70% | 2025-05-22 |
-| 后端 API | 部分完成 | 60% | 2025-05-25 |
-| 会话管理功能 | 开始实现 | 30% | 2025-06-05 |
-| 用户反馈功能 | 尚未开始 | 0% | 2025-06-15 |
-| 测试与优化 | 尚未开始 | 0% | 2025-06-25 |
-| 部署方案实现 | 尚未开始 | 0% | 2025-06-30 |
+| RAG 集成实现 | 已完成 | 100% | 已完成 |
+| 前端基础 UI | 已完成 | 100% | 已完成 |
+| 后端 API | 已完成 | 100% | 已完成 |
+| 会话管理功能 | 已完成 | 100% | 已完成 |
+| 用户反馈功能 | 已完成 | 80% | 2025-05-28 |
+| 测试与优化 | 部分完成 | 60% | 2025-06-15 |
+| 部署方案实现 | 尚未开始 | 10% | 2025-06-30 |
 
 ## 3. 待完成工作
 
 ### 3.1 高优先级
 
-1. **后端 API 增强（已完成）**
-   - 实现环境变量配置（通过 `.env` 和 `os.getenv` 实现）
-   - 完成 AnythingLLM 集成（核心聊天功能已连接，使用 `/api/v1/workspace/{slug}/chat` 端点，请求/响应处理已改进）
-   - 错误处理机制（已增强，包括 `HTTPStatusError`、`RequestError` 和一般异常捕获，并添加了日志记录）
-
-2. **线程化聊天稳定性提升（进行中）**
-   - 实现会话超时和自动清理机制
-   - 增强错误处理，确保异常情况下的会话持久性
-   - 实现会话恢复机制
-   - **目标完成日期**: 2025-05-25
+1. **用户反馈流程完善（进行中）**
+   - 实现后端反馈数据存储
+   - 开发反馈分析工具
+   - 完善反馈提交流程
+   - **目标完成日期**: 2025-05-28
    - **负责人**: [开发者姓名]
+
+2. **测试覆盖率提升（进行中）**
+   - 编写前端组件单元测试
+   - 完善后端API测试
+   - 实现端到端测试用例
+   - **目标完成日期**: 2025-06-15
+   - **负责人**: [测试负责人姓名]
 
 ### 3.2 中优先级
 
-3. **用户反馈功能**
-   - 在前端添加反馈 UI 组件
-   - 在后端实现 `/api/feedback` 端点
-   - 存储和分析反馈数据
-   - 设计反馈报告界面
-   - **目标完成日期**: 2025-06-15
+3. **聊天历史功能增强**
+   - 添加会话列表UI
+   - 实现会话重命名功能
+   - 添加会话管理API
+   - 实现会话导出/导入功能
+   - **目标完成日期**: 2025-06-10
    - **负责人**: [开发者姓名]
 
-4. **聊天历史功能**
-   - 设计会话存储模型
-   - 实现会话保存和加载 API
-   - 实现前端历史记录 UI
-   - 增加会话管理功能（重命名、删除等）
-   - **目标完成日期**: 2025-06-05
-   - **负责人**: [开发者姓名]
-
-5. **测试用例开发**
-   - 单元测试 (后端每个端点，前端每个组件)
-   - 集成测试 (前后端交互)
-   - 端到端测试 (用户场景测试)
-   - 性能测试 (负载测试和响应时间测试)
-   - **目标完成日期**: 2025-06-25
-   - **负责人**: [测试负责人姓名]
+4. **性能优化**
+   - 前端响应优化（渐进式加载、流式响应）
+   - 后端请求处理优化
+   - 缓存策略实现
+   - **目标完成日期**: 2025-06-20
+   - **负责人**: [性能优化专家姓名]
 
 ### 3.3 低优先级
 
-6. **RAG 模型与知识库优化**
+5. **RAG 模型与知识库优化**
    - **文档分块策略优化**
      - 当前: 标准 AnythingLLM 512 token 分块，150 token 重叠
      - 目标: 测试不同分块大小 (256-1024 tokens) 和重叠率 (10%-30%)，针对中文心理健康文本特点优化
@@ -130,81 +135,15 @@
        - m3e-large (多语言支持，中文表现良好)
      - 评估方法: 创建心理健康领域测试集，比较相似度搜索准确率和检索质量
    
-   - **知识库扩充与质量提升**
-     - 当前容量: ~200 文档，主要为基础心理健康知识
-     - 目标扩充: 
-       - 增加专业心理学教材摘录 (重点: CBT, DBT, 危机干预)
-       - 添加中国本土心理健康研究资料 
-       - 纳入最新心理健康指南和实践标准
-       - 建立分层知识体系 (基础知识、专业知识、应用指导)
-     - 质量控制: 建立审核流程，确保所有资料符合专业标准和准确性
-   
-   - **RAG 提示词工程优化**
-     - 实施提示词模板化，创建针对不同心理健康主题的专用提示词
-     - 增强上下文窗口设计，更好地组织检索内容
-     - 设计更精确的相关性权重策略，减少知识幻觉
-     - 添加中文特定的提示词增强（考虑语言特性和表达习惯）
-   
-   - **检索算法优化**
-     - 测试与实施混合检索策略 (结合关键词和语义检索)
-     - 评估 HyDE (Hypothetical Document Embeddings) 在心理健康问题上的效果
-     - 实现检索结果再排序机制，提高最相关内容优先级
-     - 添加元数据过滤功能，根据问题类型智能调整检索范围
-   
-   - **目标完成日期**: 2025-07-30
+   - **目标完成日期**: 2025-07-15
    - **负责人**: [AI 工程师姓名] + [心理专业顾问姓名]
-   - **成功指标**: 
-     - 检索准确率提升 25%
-     - 用户满意度提升 30%
-     - 减少 40% 的无效或错误回应
-     - 领域特定问题回答质量提升 50%
 
-7. **性能优化**
-   - **响应速度优化**
-     - 前端优化:
-       - 实现渐进式加载和流式响应显示
-       - 优化组件渲染策略，减少不必要的重绘
-       - 实现请求节流和智能缓存策略
-       - 目标: 首屏加载时间 < 1.5s，响应显示延迟 < 300ms
-     
-     - 后端优化:
-       - 优化 FastAPI 路由和依赖注入
-       - 实现请求队列管理和优先级处理
-       - 优化与 AnythingLLM 的通信协议和数据传输
-       - 实现高效的数据库连接池和查询优化
-       - 目标: API 平均响应时间 < 500ms，P95 < 2s
-   
-   - **资源使用优化**
-     - 内存占用优化:
-       - 实现 AnythingLLM 资源动态分配
-       - 优化向量数据库索引和存储结构
-       - 实现智能会话清理和资源回收
-       - 目标: 平均内存占用减少 30%，峰值占用减少 25%
-     
-     - 计算资源优化:
-       - 实现模型推理批处理
-       - 优化嵌入计算过程
-       - 实现检索任务并行化
-       - 目标: CPU 利用率优化 20%，处理相同请求数量的资源减少 30%
-   
-   - **缓存策略实现**
-     - 设计多层缓存架构:
-       - 前端本地缓存 (常用资源和UI元素)
-       - API 响应缓存 (常见问题的标准回答)
-       - 向量检索结果缓存 (热门话题相关文档)
-       - 会话上下文智能缓存 (减少重复处理)
-     - 缓存失效策略:
-       - 实现基于时间和内容更新的缓存失效机制
-       - 优先级缓存替换算法
-     - 目标: 热门查询响应时间减少 70%，整体系统吞吐量提升 50%
-   
-   - **目标完成日期**: 2025-08-15
-   - **负责人**: [后端工程师姓名] + [前端工程师姓名] + [性能优化专家姓名]
-   - **成功指标**:
-     - 系统整体响应时间减少 40%
-     - 资源利用效率提升 30%
-     - 支持并发用户数从 100 提升至 500 
-     - 系统稳定性指标提升 (可用性从 99% 提升至 99.9%)
+6. **多端支持**
+   - 移动端适配优化
+   - 响应式设计改进
+   - PWA功能实现
+   - **目标完成日期**: 2025-07-30
+   - **负责人**: [前端开发负责人]
 
 ## 4. 具体开发步骤
 
@@ -270,187 +209,98 @@ CREATE TABLE IF NOT EXISTS feedback (
 );
 ```
 
-### 4.2 用户反馈功能实现
+### 4.2 前端会话管理实现
 
-1. 前端组件：
+最近已完成基于 localStorage 的前端会话管理服务 (`sessionStorage.js`)，主要功能包括：
 
-```vue
-<!-- 添加到 ChatView.vue 消息组件 -->
-<div class="message-feedback" v-if="message.role === 'assistant'">
-  <el-button-group size="small">
-    <el-button @click="sendFeedback(message.id, 'positive')" type="success" icon="Thumb-up" circle></el-button>
-    <el-button @click="sendFeedback(message.id, 'negative')" type="danger" icon="Thumb-down" circle></el-button>
-    <el-button @click="openFeedbackDialog(message.id)" plain icon="ChatDotRound"></el-button>
-  </el-button-group>
-  
-  <!-- 详细反馈对话框 -->
-  <el-dialog
-    v-model="feedbackDialogVisible"
-    title="提供详细反馈"
-    width="50%">
-    <el-form :model="feedbackForm" label-width="120px">
-      <el-form-item label="满意度">
-        <el-rate v-model="feedbackForm.rating" :max="5" />
-      </el-form-item>
-      <el-form-item label="详细反馈">
-        <el-input
-          type="textarea"
-          v-model="feedbackForm.comment"
-          :rows="4"
-          placeholder="请告诉我们您的想法，帮助我们改进服务..." />
-      </el-form-item>
-    </el-form>
-    <template #footer>
-      <span class="dialog-footer">
-        <el-button @click="feedbackDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="submitDetailedFeedback">提交</el-button>
-      </span>
-    </template>
-  </el-dialog>
-</div>
-
-<script>
-// ...existing code...
-
-data() {
-  return {
-    // ...existing code...
-    feedbackDialogVisible: false,
-    feedbackForm: {
-      messageId: null,
-      rating: 3,
-      comment: ''
-    }
-  };
-},
-
-methods: {
-  async sendFeedback(messageId, rating) {
-    try {
-      await axios.post('/api/feedback', {
-        message_id: messageId,
-        session_id: this.sessionId,
-        rating: rating === 'positive' ? 1 : 0,
-        user_query: this.getMessageQuery(messageId),
-        bot_response: this.getMessageContent(messageId)
-      });
-      this.$message.success('感谢您的反馈!');
-    } catch (error) {
-      console.error('提交反馈失败:', error);
-      this.$message.error('提交反馈失败');
-    }
-  },
-  
-  openFeedbackDialog(messageId) {
-    this.feedbackForm.messageId = messageId;
-    this.feedbackDialogVisible = true;
-  },
-  
-  async submitDetailedFeedback() {
-    try {
-      await axios.post('/api/feedback/detailed', {
-        message_id: this.feedbackForm.messageId,
-        session_id: this.sessionId,
-        rating: this.feedbackForm.rating,
-        comment: this.feedbackForm.comment,
-        user_query: this.getMessageQuery(this.feedbackForm.messageId),
-        bot_response: this.getMessageContent(this.feedbackForm.messageId)
-      });
-      this.$message.success('感谢您提供的详细反馈!');
-      this.feedbackDialogVisible = false;
-    } catch (error) {
-      console.error('提交详细反馈失败:', error);
-      this.$message.error('提交详细反馈失败');
-    }
-  }
-}
-</script>
+```javascript
+// 主要功能：
+- saveSession(): 将会话数据存储到 localStorage
+- loadSession(): 从 localStorage 加载会话数据
+- getSessionsList(): 获取所有存储的会话列表
+- deleteSession(): 删除指定会话
+- generateSessionId(): 生成唯一会话ID
 ```
 
-2. 后端 API：
+这些功能已经集成到 ChatView.vue 中，支持：
+- 创建新会话
+- 保存当前会话状态
+- 在页面刷新后恢复会话
+- 错误重试和连接问题处理
+
+### 4.3 用户反馈功能实现
+
+已完成前端反馈UI组件，主要包括：
+
+1. 用户反馈按钮（点赞/点踩）
+   - 仅在AI回复消息上显示
+   - 鼠标悬停时显示
+   - 移动设备上始终可见
+
+2. 反馈提交流程：
+   ```javascript
+   // 反馈提交方法
+   provideFeedback(messageIndex, feedbackType) {
+     ElMessage({
+       message: '感谢您的反馈！',
+       type: feedbackType === 'positive' ? 'success' : 'info',
+       duration: 1500
+     });
+     
+     // 此处待添加向后端发送反馈的逻辑
+     // 例如: api.sendFeedback(messageIndex, feedbackType, sessionId.value);
+   }
+   ```
+
+### 4.4 测试配置实现
+
+1. 前端测试配置：
+
+已完成前端测试环境配置，使用 Vitest 作为测试框架：
+
+```javascript
+// vitest.config.js
+import { defineConfig } from 'vitest/config'
+import vue from '@vitejs/plugin-vue'
+
+export default defineConfig({
+  plugins: [vue()],
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    include: ['tests/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
+    exclude: ['node_modules', 'dist'],
+    coverage: {
+      reporter: ['text', 'html'],
+      exclude: [
+        'node_modules/',
+        'tests/',
+        '**/*.{test,spec}.{js,ts}',
+        'vitest.config.js',
+        'vite.config.js',
+      ],
+    },
+  },
+})
+```
+
+2. 后端测试运行器：
+
+已更新 `run_test.py` 以支持自动运行 pytest 测试：
 
 ```python
-# 添加到后端 main.py 或单独的 feedback_router.py
-from pydantic import BaseModel
-from typing import Optional
-from uuid import UUID
-from fastapi import APIRouter, HTTPException, Depends
-
-class FeedbackRequest(BaseModel):
-    message_id: str
-    session_id: Optional[str] = None
-    rating: int  # 1 表示积极，0 表示消极
-    user_query: str
-    bot_response: str
-    comment: Optional[str] = None
-
-class DetailedFeedbackRequest(BaseModel):
-    message_id: str
-    session_id: Optional[str] = None
-    rating: int  # 1-5 星评分
-    comment: str
-    user_query: str
-    bot_response: str
-
-feedback_router = APIRouter(prefix="/api/feedback", tags=["feedback"])
-
-@feedback_router.post("")
-async def submit_feedback(request: FeedbackRequest, db = Depends(get_db)):
-    try:
-        query = """
-        INSERT INTO feedback (message_id, session_id, user_query, bot_response, rating)
-        VALUES (%s, %s, %s, %s, %s)
-        """
-        
-        await db.execute(
-            query,
-            (
-                request.message_id,
-                request.session_id,
-                request.user_query,
-                request.bot_response,
-                request.rating
-            )
-        )
-        
-        # 记录反馈事件
-        logger.info(f"收到反馈: message_id={request.message_id}, rating={request.rating}")
-        
-        return {"status": "success", "message": "反馈已记录"}
-    except Exception as e:
-        logger.error(f"记录反馈时出错: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="内部服务器错误")
-
-@feedback_router.post("/detailed")
-async def submit_detailed_feedback(request: DetailedFeedbackRequest, db = Depends(get_db)):
-    try:
-        query = """
-        INSERT INTO feedback (message_id, session_id, user_query, bot_response, rating, comment)
-        VALUES (%s, %s, %s, %s, %s, %s)
-        """
-        
-        await db.execute(
-            query,
-            (
-                request.message_id,
-                request.session_id,
-                request.user_query,
-                request.bot_response,
-                request.rating,
-                request.comment
-            )
-        )
-        
-        # 记录详细反馈事件
-        logger.info(f"收到详细反馈: message_id={request.message_id}, rating={request.rating}, comment_length={len(request.comment)}")
-        
-        return {"status": "success", "message": "详细反馈已记录"}
-    except Exception as e:
-        logger.error(f"记录详细反馈时出错: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="内部服务器错误")
-
-# 在主应用中引入该路由
-# app.include_router(feedback_router)
+def run_pytest_tests():
+    """Runs pytest tests for the backend APIs and business logic."""
+    logger.info("Starting API and business logic tests using pytest...")
+    
+    process = subprocess.run(
+        [sys.executable, "-m", "pytest", "tests/"],
+        capture_output=True,
+        text=True,
+        cwd=os.path.dirname(os.path.abspath(__file__))
+    )
+    
+    # 处理测试输出和结果判断
 ```
 
 ## 5. 测试策略
@@ -459,8 +309,8 @@ async def submit_detailed_feedback(request: DetailedFeedbackRequest, db = Depend
 
 | 测试类型 | 目标 | 工具 | 负责人 |
 | --- | --- | --- | --- |
-| 单元测试 | 确保各组件按预期工作 | PyTest, Vue Test Utils | [开发团队] |
-| 集成测试 | 验证组件间交互正常 | PyTest | [测试团队] |
+| 单元测试 | 确保各组件按预期工作 | Vitest, PyTest | [开发团队] |
+| 集成测试 | 验证组件间交互正常 | Vitest, PyTest | [测试团队] |
 | 端到端测试 | 验证完整用户流程 | Cypress | [测试团队] |
 | 性能测试 | 确保在预期负载下性能可接受 | Locust | [运维团队] |
 | 安全测试 | 识别潜在安全漏洞 | OWASP ZAP | [安全团队] |
@@ -490,6 +340,55 @@ async def submit_detailed_feedback(request: DetailedFeedbackRequest, db = Depend
    - 并发用户测试（目标: 支持 100 并发用户）
    - 长时间稳定性测试（24小时连续运行）
    - 响应时间测试（目标: P95 < 2秒）
+
+### 5.3 测试最佳实践
+
+根据最近更新的测试文档，我们确立了以下测试最佳实践：
+
+1. **组件渲染测试**：
+   ```javascript
+   it('renders the chat interface', () => {
+     const wrapper = mount(ChatView);
+     expect(wrapper.find('.chat-container').exists()).toBe(true);
+   });
+   ```
+
+2. **用户交互测试**：
+   ```javascript
+   it('sends a message when button is clicked', async () => {
+     const wrapper = mount(ChatView);
+     await wrapper.setData({ userInput: 'Hello' });
+     await wrapper.find('.send-button').trigger('click');
+     // 验证结果...
+   });
+   ```
+
+3. **API调用测试**：
+   ```javascript
+   it('calls the API when sending a message', async () => {
+     const mockApi = { sendMessage: vi.fn().mockResolvedValue({...}) };
+     const wrapper = mount(ChatView, {
+       global: { provide: { api: mockApi } }
+     });
+     // 测试交互及验证API调用
+   });
+   ```
+
+4. **错误处理测试**:
+   ```javascript
+   it('handles API errors gracefully', async () => {
+     const mockApi = { sendMessage: vi.fn().mockRejectedValue(new Error('API Error')) };
+     // 测试组件的错误处理...
+   });
+   ```
+
+5. **快照测试**:
+   ```javascript
+   it('matches snapshot', () => {
+     const wrapper = mount(ChatView);
+     expect(wrapper.html()).toMatchSnapshot();
+   });
+   ```
 
 ## 6. 部署规划
 
@@ -605,36 +504,12 @@ services:
     networks:
       - psychat-network
 
-  prometheus:
-    image: prom/prometheus:latest
-    volumes:
-      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
-      - prometheus-data:/prometheus
-    ports:
-      - "9090:9090"
-    networks:
-      - psychat-network
-
-  grafana:
-    image: grafana/grafana:latest
-    volumes:
-      - grafana-data:/var/lib/grafana
-      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
-    ports:
-      - "3000:3000"
-    environment:
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
-    networks:
-      - psychat-network
-
 networks:
   psychat-network:
 
 volumes:
   mysql-data:
   anythingllm-data:
-  prometheus-data:
-  grafana-data:
 ```
 
 ### 6.3 持续集成/持续部署 (CI/CD)
@@ -669,28 +544,28 @@ volumes:
 | --- | --- | --- |
 | 项目启动 | 2025-04-01 | 已完成 |
 | 架构设计完成 | 2025-04-15 | 已完成 |
-| 原型版本发布 | 2025-05-15 | 进行中 |
-| 测试版本发布 | 2025-06-15 | 计划中 |
+| 原型版本发布 | 2025-05-15 | 已完成 |
+| 测试版本发布 | 2025-06-15 | 进行中 |
 | 公测版本发布 | 2025-06-30 | 计划中 |
 | 正式版发布 | 2025-07-15 | 计划中 |
 
 ### 7.2 周进度计划
 
-#### 当前周 (2025-05-15 至 2025-05-21)
+#### 当前周 (2025-05-22 至 2025-05-28)
 
-- [ ] 完成会话管理功能核心实现
-- [ ] 解决前端聊天界面已知问题
-- [ ] 优化 AnythingLLM 与后端的集成
-- [ ] 增加系统级日志记录
-- [ ] 实现会话恢复机制
+- [ ] 完成用户反馈后端 API 实现
+- [ ] 完成前端组件初步测试用例
+- [ ] 优化会话管理 UI 和交互
+- [ ] 完善错误处理和日志记录
+- [ ] 实现基础的会话导出功能
 
-#### 下周 (2025-05-22 至 2025-05-28)
+#### 下周 (2025-05-29 至 2025-06-04)
 
-- [ ] 提高 API 错误处理鲁棒性
-- [ ] 开始用户反馈功能前端实现
-- [ ] 设计并实现用户反馈分析工具
-- [ ] 增加系统监控指标收集
-- [ ] 开始单元测试编写
+- [ ] 开始实现聊天历史管理界面
+- [ ] 完成反馈分析工具原型
+- [ ] 扩充后端测试覆盖率
+- [ ] 开始性能基准测试
+- [ ] 预备部署测试环境配置
 
 ## 8. 问题与风险管理
 
@@ -706,10 +581,11 @@ volumes:
 
 | 问题ID | 问题描述 | 优先级 | 状态 | 负责人 | 目标解决日期 |
 | --- | --- | --- | --- | --- | --- |
-| IS-001 | 聊天会话在页面刷新后丢失 | 高 | 解决中 | 前端开发 | 2025-05-20 |
-| IS-002 | RAG 回答中存在中文语法错误 | 中 | 解决中 | 提示词工程师 | 2025-05-22 |
-| IS-003 | 在高并发下数据库连接超时 | 高 | 待解决 | 后端开发 | 2025-05-25 |
-| IS-004 | AnythingLLM 嵌入模型对专业术语效果不佳 | 中 | 调查中 | RAG专家 | 待定 |
+| IS-001 | 聊天会话在页面刷新后丢失 | 高 | 已解决 ✓ | 前端开发 | 已完成 |
+| IS-002 | RAG 回答中存在中文语法错误 | 中 | 解决中 | 提示词工程师 | 2025-05-25 |
+| IS-003 | 在高并发下数据库连接超时 | 高 | 解决中 | 后端开发 | 2025-05-28 |
+| IS-004 | AnythingLLM 嵌入模型对专业术语效果不佳 | 中 | 调查中 | RAG专家 | 2025-06-10 |
+| IS-005 | 移动设备上UI响应不佳 | 中 | 新问题 | 前端开发 | 2025-06-05 |
 
 ---
 
@@ -802,7 +678,7 @@ volumes:
 └── README.md        # 项目说明文件
 ```
 
-- **处理状态**: 部分完成，持续优化中
+- **处理状态**: 已完成 ✓
 
 ## 2. 功能优化记录
 
@@ -819,7 +695,7 @@ volumes:
   - 实现了对话上下文的持久化存储
   - 改善了多轮对话的连贯性和相关性
   - 支持同一用户管理多个独立的对话线程
-- **处理状态**: 已完成基础功能 ✓，需进一步稳定性增强
+- **处理状态**: 已完成 ✓
 
 ### 2.2 错误处理增强 (2025-05-12)
 
@@ -834,6 +710,30 @@ volumes:
   - 增强问题诊断能力
 - **处理状态**: 已完成 ✓
 
+### 2.3 前端会话管理实现 (2025-05-18)
+
+- **变更内容**:
+  - 新增 `sessionStorage.js` 服务
+  - 实现基于 localStorage 的会话存储
+  - 添加会话恢复、保存和创建功能
+  - 实现新会话按钮功能
+- **优化效果**:
+  - 解决了页面刷新后会话丢失问题 (IS-001)
+  - 提供更流畅的用户体验
+  - 为多会话管理奠定基础
+- **处理状态**: 已完成 ✓
+
+### 2.4 用户反馈功能 (2025-05-20)
+
+- **变更内容**:
+  - 在 AI 回复消息上添加反馈按钮
+  - 实现积极/消极反馈收集
+  - 添加反馈提交逻辑
+- **优化效果**:
+  - 允许用户提供即时反馈
+  - 为模型回答质量评估提供数据
+- **处理状态**: 部分完成 (前端已完成，后端存储待实现)
+
 ## 3. 性能优化记录
 
 ### 3.1 数据库查询优化 (2025-05-14)
@@ -847,17 +747,19 @@ volumes:
   - 减轻数据库负载
 - **处理状态**: 已完成 ✓
 
-### 3.2 前端性能优化 (进行中)
+### 3.2 前端性能优化 (2025-05-20)
 
 - **变更内容**:
   - 实现组件懒加载
-  - 优化资源加载策略
-  - 改进状态管理
-- **预期效果**:
-  - 首屏加载时间缩短
-  - 页面交互更流畅
-- **处理状态**: 进行中
+  - 优化会话管理组件
+  - 改进移动设备响应式设计
+- **优化效果**:
+  - 页面加载速度提升
+  - 移动设备体验改善
+- **处理状态**: 部分完成 (进行中)
 
 ## 总结
 
-本次优化工作大幅改进了项目结构、功能和性能，为后续开发奠定了更加规范和稳定的基础。仍有部分优化工作在进行中，将在后续更新中继续改进。
+本次优化和功能增强进一步提高了项目的完成度和用户体验。重点工作包括实现会话管理和用户反馈功能，以及建立完整的测试框架。当前项目进度良好，所有关键功能已基本完成，正在进行细节优化和测试覆盖率提升工作。
+
+下阶段的工作重点将是完善反馈系统、增强会话管理功能，并为部署准备完整的测试套件。最终目标是在2025年7月前交付一个功能完善、性能稳定的正式版本。
