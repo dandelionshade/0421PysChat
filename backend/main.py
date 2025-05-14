@@ -48,12 +48,11 @@ async def get_http_client() -> httpx.AsyncClient:
 
 app = FastAPI(title="Mental Health Chatbot API") # 创建FastAPI应用实例，并设置标题
 
-# --- Lifespan Events for HTTP Client ---
+# --- Replace on_event with lifespan ---
 @app.on_event("startup")
 async def startup_event():
     """
-    Initialize the httpx.AsyncClient when the application starts.
-    Also, validate essential configurations.
+    Initialize resources at startup.
     """
     app.state.http_client = httpx.AsyncClient(timeout=HTTPX_TIMEOUT)
     logger.info(f"HTTPX Client initialized with timeout: {HTTPX_TIMEOUT}s")
@@ -67,7 +66,7 @@ async def startup_event():
 @app.on_event("shutdown")
 async def shutdown_event():
     """
-    Close the httpx.AsyncClient when the application shuts down.
+    Clean up resources at shutdown.
     """
     if hasattr(app.state, 'http_client'):
         await app.state.http_client.aclose()
