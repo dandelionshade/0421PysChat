@@ -8,6 +8,7 @@ import sys
 import uvicorn
 import logging
 from dotenv import load_dotenv
+import subprocess # Add this import
 
 # Configure logging
 logging.basicConfig(
@@ -78,6 +79,31 @@ def check_database():
         logger.error(f"❌ Database connection failed: {str(e)}")
         return False
 
+def run_pytest_tests():
+    """Runs pytest tests for the backend APIs and business logic."""
+    logger.info("Starting API and business logic tests using pytest...")
+    
+    # Ensure tests are run from the 'backend' directory context, targeting the 'tests' subfolder.
+    # sys.executable ensures using the same Python interpreter running this script.
+    process = subprocess.run(
+        [sys.executable, "-m", "pytest", "tests/"],
+        capture_output=True,
+        text=True,
+        cwd=os.path.dirname(os.path.abspath(__file__)) # Ensure running from backend dir
+    )
+    
+    if process.stdout:
+        logger.info("Pytest output:\n%s", process.stdout)
+    if process.stderr:
+        logger.error("Pytest errors:\n%s", process.stderr)
+        
+    if process.returncode == 0:
+        logger.info("✅ Pytest tests passed successfully.")
+        return True
+    else:
+        logger.error(f"❌ Pytest tests failed with return code {process.returncode}.")
+        return False
+
 def start_test_server():
     """Start the backend server in test mode"""
     # 配置Uvicorn日志记录
@@ -135,8 +161,21 @@ if __name__ == "__main__":
         sys.exit(1)
     
     # Check database connection
-    if not check_database():
+    db_ok = check_database()
+    if not db_ok:
         logger.warning("Continuing despite database connection issues...")
     
+    # Run Pytest tests
+    if db_ok: # Optionally, only run tests if DB is okay, or always run them
+        logger.info("Proceeding to run API tests...")
+        tests_ok = run_pytest_tests()
+        if not tests_ok:
+            logger.error("API tests failed. Check logs for details.")
+            # Decide if you want to exit or continue to start server
+            # For now, we'll log the error and continue, similar to DB check
+    else:
+        logger.warning("Skipping API tests due to database connection issues.")
+        
     # Start test server
+    logger.info("Attempting to start the test server...")
     start_test_server()
