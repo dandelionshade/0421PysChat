@@ -1,9 +1,14 @@
 import pytest
+import sys
+import os
 from fastapi.testclient import TestClient
 from unittest.mock import AsyncMock, patch
 
-# 导入主应用
-from backend.main import app
+# 添加backend目录到Python路径
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+# 直接从main导入app
+from main import app
 
 # 创建测试客户端
 client = TestClient(app)

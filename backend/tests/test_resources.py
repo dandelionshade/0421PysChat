@@ -2,6 +2,11 @@
 import pytest
 from fastapi.testclient import TestClient
 from unittest.mock import patch, MagicMock
+import sys
+from pathlib import Path
+
+# Add the parent directory to sys.path to properly import the main application
+sys.path.append(str(Path(__file__).parent.parent.parent))
 
 # 导入主应用
 from backend.main import app
