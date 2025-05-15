@@ -1,6 +1,7 @@
 import os
 import sys
 import pymysql
+import pymysql.cursors
 from dotenv import load_dotenv
 import logging
 
@@ -41,6 +42,7 @@ def test_db_connection():
             # 执行一个简单的查询
             cursor.execute("SELECT 1 AS result")
             result = cursor.fetchone()
+            assert result is not None, "数据库查询 (SELECT 1 AS result) 未返回任何结果"
             assert result["result"] == 1, "数据库查询应返回值1"
             
             # 测试能否查询表结构
@@ -51,7 +53,7 @@ def test_db_connection():
             logger.info(f"成功连接到数据库。找到以下表: {', '.join(table_names)}")
             
             # 测试核心表是否存在
-            expected_tables = ['resources', 'feedback', 'chat_sessions', 'chat_messages']
+            expected_tables = ['resources', 'feedback', 'chat_sessions', 'chat_messages', 'users', 'attachments']
             for table in expected_tables:
                 assert table in table_names, f"核心表 '{table}' 不存在"
         

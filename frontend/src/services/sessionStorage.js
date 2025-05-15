@@ -1,5 +1,5 @@
 /**
- * 会话存储服务
+ * 简单会话存储服务
  * 负责管理聊天会话的本地存储，使用localStorage实现聊天历史的持久化
  */
 
@@ -50,17 +50,6 @@ export const getSessionsList = () => {
   } catch (error) {
     console.error('Error getting sessions list:', error);
     return [];
-  }
-};
-
-// 删除会话
-export const deleteSession = (sessionId) => {
-  try {
-    localStorage.removeItem(`chat_session_${sessionId}`);
-    return true;
-  } catch (error) {
-    console.error('Error deleting session:', error);
-    return false;
   }
 };
 

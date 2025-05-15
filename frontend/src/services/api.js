@@ -26,8 +26,15 @@ if (anythingLLMApiKey) {
 
 export default { // 导出包含API方法的对象
   // Chat API // 聊天相关的API
-  sendMessage(message) { // 定义sendMessage方法，用于发送聊天消息
-    return api.post('/chat', { message }); // 使用创建的api实例发送POST请求到'/chat'，请求体包含message
+  sendMessage(message, sessionId = null) { // 定义sendMessage方法，用于发送聊天消息
+    const data = { message }; // 创建包含message的data对象
+    
+    // Include session_id if provided
+    if (sessionId) {
+      data.session_id = sessionId; // 如果提供了sessionId，则将其添加到data对象中
+    }
+    
+    return api.post('/chat', data); // 使用创建的api实例发送POST请求到'/chat'，请求体包含data
   }, // sendMessage方法结束
   
   // Resources API // 资源相关的API

@@ -36,28 +36,6 @@
         >
           <!-- Display the content of each message -->
           <div class="message-content">{{ msg.content }}</div>
-          
-          <!-- 新增: 用户反馈按钮 (仅显示在AI回复上) -->
-          <div v-if="msg.role === 'assistant'" class="message-feedback">
-            <el-tooltip content="这个回答有帮助" placement="top">
-              <el-button 
-                type="success" 
-                size="small" 
-                circle 
-                icon="ThumbUp" 
-                @click="provideFeedback(index, 'positive')"
-              ></el-button>
-            </el-tooltip>
-            <el-tooltip content="这个回答没帮助" placement="top">
-              <el-button 
-                type="danger" 
-                size="small" 
-                circle 
-                icon="ThumbDown" 
-                @click="provideFeedback(index, 'negative')"
-              ></el-button>
-            </el-tooltip>
-          </div>
         </div>
         
         <!-- Show loading indicator when waiting for AI response -->
@@ -119,7 +97,7 @@ export default {
   },
   // Setup function defines component logic and returns data to the template
   setup() {
-    // 新增: 会话ID，用于关联后端会话和本地存储
+    // 新增: 会话ID，用于关联本地存储
     const sessionId = ref(generateSessionId());
     // Create a reactive array of message objects with initial welcome message
     const messages = ref([
@@ -131,10 +109,6 @@ export default {
     const loading = ref(false);
     // Reference to the messages container DOM element
     const messagesContainer = ref(null);
-    // 新增: 错误重试计数
-    const retryCount = ref(0);
-    // 新增: 最大重试次数
-    const MAX_RETRIES = 3;
 
     // Function to scroll the chat to the bottom after new messages
     const scrollToBottom = async () => {
@@ -164,7 +138,7 @@ export default {
     const startNewSession = () => {
       if (loading.value) return;
       
-      // 确认是否保存当前会话
+      // 提示用户正在开始新会话
       ElMessage({
         message: '正在开始新对话...',
         type: 'info',
@@ -204,11 +178,10 @@ export default {
       
       // Set loading state to true while waiting for response
       loading.value = true;
-      retryCount.value = 0;
       
       try {
         // Send message to backend API and wait for response
-        const response = await api.sendMessage(userMessage, sessionId.value);
+        const response = await api.sendMessage(userMessage);
         
         // Add AI assistant response to messages array
         messages.value.push({ 
@@ -220,24 +193,6 @@ export default {
         saveCurrentSession();
       } catch (error) {
         console.error('Error sending message:', error);
-        
-        // 新增: 实现自动重试逻辑
-        if (retryCount.value < MAX_RETRIES) {
-          retryCount.value++;
-          
-          ElMessage({
-            message: `连接问题，正在进行第${retryCount.value}次重试...`,
-            type: 'warning',
-            duration: 2000
-          });
-          
-          // 延迟重试，避免立即发送请求
-          setTimeout(() => {
-            loading.value = false;
-            sendMessage();
-          }, 1000 * retryCount.value);
-          return;
-        }
         
         // Show error notification to user
         ElMessage.error('发送消息失败，请稍后再试');
@@ -251,24 +206,10 @@ export default {
         saveCurrentSession();
       } finally {
         // Set loading to false regardless of success or failure
-        if (retryCount.value === 0 || retryCount.value >= MAX_RETRIES) {
-          loading.value = false;
-        }
+        loading.value = false;
         // Scroll chat to bottom to show the new message
         scrollToBottom();
       }
-    };
-
-    // 新增: 提供反馈功能
-    const provideFeedback = (messageIndex, feedbackType) => {
-      ElMessage({
-        message: '感谢您的反馈！',
-        type: feedbackType === 'positive' ? 'success' : 'info',
-        duration: 1500
-      });
-      
-      // 此处可以添加向后端发送反馈的逻辑
-      // 例如: api.sendFeedback(messageIndex, feedbackType, sessionId.value);
     };
 
     // When component is mounted, scroll to bottom to show welcome message
@@ -291,15 +232,13 @@ export default {
       loading,
       messagesContainer,
       sendMessage,
-      startNewSession,
-      provideFeedback
+      startNewSession
     };
   }
 }
 </script>
 
 <style scoped>
-/* 保留现有样式 */
 /* Container for the entire chat interface */
 .chat-container {
   max-width: 800px;    /* Limit the width for better readability */
@@ -340,7 +279,7 @@ export default {
 .message {
   display: flex;         /* Use flexbox for layout */
   margin-bottom: 10px;   /* Add space below each message */
-  position: relative;    /* 为反馈按钮的定位做准备 */
+  position: relative;    /* 为按钮的定位做准备 */
 }
 
 /* User message alignment (right side) */
@@ -381,24 +320,6 @@ export default {
   gap: 10px;          /* Add space between input and button */
 }
 
-/* 新增: 反馈按钮样式 */
-.message-feedback {
-  position: absolute;  /* 绝对定位 */
-  right: -70px;        /* 位于消息气泡右侧 */
-  top: 50%;            /* 垂直居中 */
-  transform: translateY(-50%); /* 精确垂直居中 */
-  display: flex;       /* 弹性布局 */
-  flex-direction: column; /* 垂直排列按钮 */
-  gap: 5px;            /* 按钮之间的间距 */
-  opacity: 0;          /* 默认隐藏 */
-  transition: opacity 0.3s ease; /* 平滑过渡效果 */
-}
-
-/* 鼠标悬停时显示反馈按钮 */
-.message:hover .message-feedback {
-  opacity: 1;
-}
-
 /* 会话控制按钮样式 */
 .session-controls {
   display: flex;       /* 弹性布局 */
@@ -417,14 +338,6 @@ export default {
 
 /* 媒体查询：移动设备适配 */
 @media (max-width: 768px) {
-  .message-feedback {
-    position: static;     /* 在移动设备上改为静态定位 */
-    opacity: 1;           /* 始终显示 */
-    flex-direction: row;  /* 水平排列按钮 */
-    justify-content: flex-end; /* 靠右对齐 */
-    margin-top: 5px;      /* 与消息之间的间距 */
-  }
-  
   .message-content {
     max-width: 85%;       /* 移动设备上消息气泡可以稍宽一些 */
   }
