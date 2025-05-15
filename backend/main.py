@@ -112,7 +112,7 @@ class ChatResponse(BaseModel): # 定义聊天响应的数据模型
 
 class FeedbackRequest(BaseModel):
     message_id: str
-    session_id: str
+    session_id: Optional[str] = None  # Change: Make session_id optional with default None
     user_query: str
     bot_response: str
     rating: int
@@ -430,18 +430,51 @@ async def submit_feedback(feedback: FeedbackRequest):
     try:
         conn = get_db_connection()
         with conn.cursor() as cursor:
-            sql = """
-            INSERT INTO feedback (message_id, user_query, bot_response, rating, comment)
-            VALUES (%s, %s, %s, %s, %s)
-            """
-            cursor.execute(sql, (
-                feedback.message_id,
-                # feedback.session_id, # Removed session_id from insert
-                feedback.user_query,
-                feedback.bot_response,
-                feedback.rating,
-                feedback.comment
-            ))
+            # Check if session_id is provided and construct SQL accordingly
+            if feedback.session_id:
+                # Check if feedback table has session_id column
+                cursor.execute("SHOW COLUMNS FROM feedback LIKE 'session_id'")
+                has_session_id = cursor.fetchone() is not None
+                
+                if has_session_id:
+                    sql = """
+                    INSERT INTO feedback (message_id, session_id, user_query, bot_response, rating, comment)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                    """
+                    cursor.execute(sql, (
+                        feedback.message_id,
+                        feedback.session_id,
+                        feedback.user_query,
+                        feedback.bot_response,
+                        feedback.rating,
+                        feedback.comment
+                    ))
+                else:
+                    # If session_id column doesn't exist, use SQL without it
+                    sql = """
+                    INSERT INTO feedback (message_id, user_query, bot_response, rating, comment)
+                    VALUES (%s, %s, %s, %s, %s)
+                    """
+                    cursor.execute(sql, (
+                        feedback.message_id,
+                        feedback.user_query,
+                        feedback.bot_response,
+                        feedback.rating,
+                        feedback.comment
+                    ))
+            else:
+                # If session_id is not provided
+                sql = """
+                INSERT INTO feedback (message_id, user_query, bot_response, rating, comment)
+                VALUES (%s, %s, %s, %s, %s)
+                """
+                cursor.execute(sql, (
+                    feedback.message_id,
+                    feedback.user_query,
+                    feedback.bot_response,
+                    feedback.rating,
+                    feedback.comment
+                ))
             conn.commit()
         
         return {"success": True}
