@@ -1,3 +1,11 @@
+'''
+Author: zhen doniajohary2677@gmail.com
+Date: 2025-05-15 20:57:50
+LastEditors: zhen doniajohary2677@gmail.com
+LastEditTime: 2025-05-16 10:10:32
+FilePath: \0421PysChat\tests\e2e\test_basic_flow.py
+Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
+'''
 import pytest
 from playwright.sync_api import Page, expect
 
@@ -10,7 +18,7 @@ def test_homepage_loads(page: Page):
     page.goto(FRONTEND_URL)
     
     # Verify the page title is present
-    expect(page).to_have_title(/PsyChat|Mental Health|Psychology/)
+    expect(page).to_have_title(r"PsyChat|Mental Health|Psychology")
     
     # Verify the chat interface is visible
     chat_interface = page.locator(".chat-container")
