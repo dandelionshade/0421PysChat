@@ -16,7 +16,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 # 加载环境变量
 load_dotenv()
 
-def test_db_connection():
+def test_db_connection(use_pytest=True):
     """直接测试数据库连接，不使用应用程序的其他部分"""
     # 从环境变量获取数据库配置
     db_host = os.getenv("DB_HOST", "localhost")
@@ -60,13 +60,22 @@ def test_db_connection():
         
         connection.close()
         logger.info("数据库连接测试成功通过！")
-        assert True  # 使用assertion而不是return
+        if use_pytest:
+            assert True  # 使用assertion而不是return
+        else:
+            return True  # 当直接运行脚本时返回True
     except pymysql.MySQLError as e:
         logger.error(f"数据库连接错误: {e}")
-        pytest.skip(f"数据库连接失败，跳过测试: {e}")  # Skip instead of returning False
+        if use_pytest:
+            pytest.skip(f"数据库连接失败，跳过测试: {e}")  # Skip instead of returning False
+        else:
+            return False
     except AssertionError as e:
         logger.error(f"数据库测试断言失败: {e}")
-        raise  # Re-raise assertion error
+        if use_pytest:
+            raise  # Re-raise assertion error
+        else:
+            return False
     except Exception as e:
         error_str = str(e)
         if "cryptography" in error_str and "required" in error_str:
@@ -74,7 +83,10 @@ def test_db_connection():
             logger.error("请运行: pip install cryptography")
         else:
             logger.error(f"数据库测试中发生未知错误: {e}")
-        pytest.skip(f"数据库测试失败，跳过测试: {e}")  # Skip on unknown error
+        if use_pytest:
+            pytest.skip(f"数据库测试失败，跳过测试: {e}")  # Skip on unknown error
+        else:
+            return False
 
 if __name__ == "__main__":
     """当直接运行此脚本时执行测试"""
@@ -93,7 +105,7 @@ if __name__ == "__main__":
         print("请运行: pip install cryptography")
         sys.exit(1)
         
-    success = test_db_connection()
+    success = test_db_connection(use_pytest=False)
     if success:
         print("✅ 数据库连接测试成功！")
         sys.exit(0)

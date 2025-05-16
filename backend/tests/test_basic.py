@@ -1,3 +1,11 @@
+'''
+Author: zhen doniajohary2677@gmail.com
+Date: 2025-05-15 20:30:54
+LastEditors: zhen doniajohary2677@gmail.com
+LastEditTime: 2025-05-16 13:14:04
+FilePath: \0421PysChat\backend\tests\test_basic.py
+Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
+'''
 import os
 import sys
 import pytest
@@ -39,6 +47,8 @@ def test_import_main():
     assert os.path.exists(main_path), f"找不到main.py文件: {main_path}"
     
     spec = importlib.util.spec_from_file_location("main", main_path)
+    assert spec is not None, f"无法从文件创建模块规格: {main_path}"
+    assert spec.loader is not None, f"模块加载器未设置: {main_path}"
     main = importlib.util.module_from_spec(spec)
     try:
         spec.loader.exec_module(main)
@@ -51,7 +61,7 @@ def test_import_main():
 def test_pydantic_models():
     """测试Pydantic模型定义是否正确"""
     try:
-        from pydantic import BaseModel
+        from pydantic import BaseModel, ValidationError
         from typing import Optional
         
         # 定义一个简单的模型用于测试
@@ -68,10 +78,14 @@ def test_pydantic_models():
         
         # 测试验证
         try:
-            TestModel(name="Missing ID")  # 缺少必要的id字段
-            assert False, "验证应该失败，因为缺少必要的id字段"
-        except Exception:
+            # 使用类型注解来避免静态类型检查警告
+            from typing import Any, Dict
+            invalid_data: Dict[str, Any] = {"id": "string_not_int", "name": "Invalid ID Type"}
+            TestModel(**invalid_data)  # id字段类型错误，应该是int而不是str
+            assert False, "验证应该失败，因为id字段类型错误"
+        except ValidationError:
             # 验证失败是预期的
+            logger.info("✓ Pydantic验证按预期工作")
             pass
         
         logger.info("✓ Pydantic模型测试通过")
