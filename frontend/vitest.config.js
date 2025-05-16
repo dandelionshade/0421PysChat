@@ -29,5 +29,10 @@ export default defineConfig({
         'vite.config.js',
       ],
     },
+    // 确保测试完成后退出
+    watch: false,
+    reporters: ['default'],
+    // 设置超时时间
+    testTimeout: 10000,
   },
 })

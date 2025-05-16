@@ -1,7 +1,7 @@
 {
   "name": "psychat",
-  "version": "1.0.0",
-  "description": "PsyChat Application",
+  "version": "0.1.0",
+  "description": "心理健康聊天应用",
   "private": true,
   "workspaces": [
     "frontend"
@@ -10,7 +10,15 @@
     "frontend:dev": "cd frontend && npm run dev",
     "backend:dev": "cd backend && uvicorn main:app --reload",
     "start": "concurrently \"npm run frontend:dev\" \"npm run backend:dev\"",
-    "install:all": "npm install && cd frontend && npm install"
+    "install:all": "npm install && cd frontend && npm install",
+    "test:backend": "python -m pytest backend/tests",
+    "test:backend:unit": "python -m pytest backend/tests/test_basic.py backend/tests/test_health_endpoint.py",
+    "test:frontend": "cd frontend && npm test",
+    "test:e2e": "python -m pytest tests/e2e",
+    "test": "npm run test:backend && npm run test:frontend",
+    "dev:backend": "cd backend && python -m uvicorn main:app --reload",
+    "dev:frontend": "cd frontend && npm run dev",
+    "install:playwright": "python -m pip install playwright && python -m playwright install"
   },
   "dependencies": {},
   "devDependencies": {

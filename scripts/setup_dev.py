@@ -26,6 +26,31 @@ def check_requirements():
         if shutil.which(cmd) is None:
             print(f"错误: 未找到命令 '{cmd}'")
             return False
+    
+    # 检查所需Python包
+    required_packages = ["pytest", "playwright", "fastapi", "httpx", "pymysql"]
+    missing_packages = []
+    for package in required_packages:
+        try:
+            __import__(package)
+        except ImportError:
+            missing_packages.append(package)
+    
+    if missing_packages:
+        print(f"缺少所需Python包: {', '.join(missing_packages)}")
+        install = input("是否自动安装缺少的包? (y/n): ")
+        if install.lower() == 'y':
+            subprocess.run([sys.executable, "-m", "pip", "install", *missing_packages])
+            
+            # 特殊处理: playwright需要安装浏览器
+            if "playwright" in missing_packages:
+                print("安装Playwright浏览器...")
+                subprocess.run([sys.executable, "-m", "playwright", "install"])
+        else:
+            print(f"请手动安装缺少的包: pip install {' '.join(missing_packages)}")
+            if "playwright" in missing_packages:
+                print("安装完Playwright后，还需要安装浏览器: python -m playwright install")
+            return False
             
     return True
 
