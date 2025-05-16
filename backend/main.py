@@ -105,32 +105,31 @@ app.add_middleware( # 添加中间件
 # Pydantic models # Pydantic模型定义
 class ChatRequest(BaseModel): # 定义聊天请求的数据模型
     message: str # 消息内容，类型为字符串
-    session_id: Optional[str] = None # Optional session ID for threaded conversations
+    session_id: Optional[str] = None # Optional session ID for logging or client-side context
 
 class ChatResponse(BaseModel): # 定义聊天响应的数据模型
     reply: str # 响应内容，类型为字符串
 
-class FeedbackRequest(BaseModel):
-    message_id: str
-    session_id: Optional[str] = None  # Change: Make session_id optional with default None
-    user_query: str
-    bot_response: str
-    rating: int
-    comment: Optional[str] = None
+# FeedbackRequest REMOVED FOR MVP
+# class FeedbackRequest(BaseModel):
+#     message_id: str
+#     session_id: Optional[str] = None
+#     user_query: str
+#     bot_response: str
+#     rating: int
+#     comment: Optional[str] = None
 
-# Add these models below other BaseModel classes
-class SessionCreate(BaseModel):
-    name: str
-
-class SessionUpdate(BaseModel):
-    name: str
-
-class SessionResponse(BaseModel):
-    id: str
-    name: str
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
-    anythingllm_thread_id: Optional[str] = None
+# Session models REMOVED FOR MVP
+# class SessionCreate(BaseModel):
+#     name: str
+# class SessionUpdate(BaseModel):
+#     name: str
+# class SessionResponse(BaseModel):
+#     id: str
+#     name: str
+#     created_at: Optional[str] = None
+#     updated_at: Optional[str] = None
+#     anythingllm_thread_id: Optional[str] = None
 
 # Database connection helper # 数据库连接帮助函数
 def get_db_connection(): # 定义获取数据库连接的函数
@@ -161,76 +160,35 @@ async def chat(
         logger.error("AnythingLLM URL or workspace not configured properly.")
         raise HTTPException(status_code=500, detail="AnythingLLM service not configured")
 
-    # Set up proper headers according to API documentation
     headers = {
         "Content-Type": "application/json",
     }
     if ANYTHINGLLM_API_KEY:
         headers["Authorization"] = f"Bearer {ANYTHINGLLM_API_KEY}"
 
-    # Structure payload according to API docs
     payload = {
-        "message": request_data.message, # Use request_data
+        "message": request_data.message,
+        "mode": "chat" # Always use general chat mode for MVP
     }
 
-    anything_llm_url = ""
-    current_thread_id = None
-    db_conn = None
+    # For MVP, always use the general workspace chat endpoint.
+    # session_id from request_data can be used for logging if desired, but not for threading.
+    anything_llm_url = f"{ANYTHINGLLM_BASE_URL}/v1/workspace/{WORKSPACE_SLUG}/chat"
+    
+    if request_data.session_id:
+        logger.info(f"Chat request for client-side session_id: {request_data.session_id} (used for logging, not threading in MVP)")
+    else:
+        logger.info("Chat request without client-side session_id.")
 
+    logger.info(f"Sending request to: {anything_llm_url}")
+    
     try:
-        if request_data.session_id: # Use request_data
-            logger.info(f"Chat request for session_id: {request_data.session_id}") # Use request_data
-            db_conn = get_db_connection()
-            with db_conn.cursor() as cursor:
-                cursor.execute("SELECT anythingllm_thread_id FROM chat_sessions WHERE id = %s", (request_data.session_id,)) # Use request_data
-                session_row = cursor.fetchone()
-
-                if session_row and session_row.get("anythingllm_thread_id"):
-                    current_thread_id = session_row["anythingllm_thread_id"]
-                    logger.info(f"Found existing thread_id: {current_thread_id}")
-                else:
-                    # Create a new thread using the proper API endpoint format
-                    new_thread_url = f"{ANYTHINGLLM_BASE_URL}/v1/workspace/{WORKSPACE_SLUG}/thread/new"
-                    logger.info(f"Creating new thread via: {new_thread_url}")
-                    
-                    new_thread_response = await client.post(new_thread_url, json={}, headers=headers)
-                    new_thread_response.raise_for_status()
-                    thread_data = new_thread_response.json()
-                    
-                    # Extract thread ID/slug from response according to API format
-                    current_thread_id = thread_data.get("threadSlug") or thread_data.get("slug")
-                    if not current_thread_id:
-                        logger.error(f"Failed to get thread ID from response: {thread_data}")
-                        raise HTTPException(status_code=500, detail="Failed to create thread")
-                    
-                    # Save thread ID to database
-                    if session_row:
-                        cursor.execute("UPDATE chat_sessions SET anythingllm_thread_id = %s, updated_at = CURRENT_TIMESTAMP WHERE id = %s",
-                                      (current_thread_id, request_data.session_id)) # Use request_data
-                    else:
-                        # This case might need re-evaluation: if session_id was provided but not found,
-                        # creating a new session entry here might be unexpected.
-                        # However, the original logic implies creating if not fully set up.
-                        cursor.execute("INSERT INTO chat_sessions (id, anythingllm_thread_id, name) VALUES (%s, %s, %s)",
-                                      (request_data.session_id, current_thread_id, f"Session {request_data.session_id[:8]}")) # Use request_data
-                    db_conn.commit()
-            
-            # Use the thread-specific chat endpoint format
-            anything_llm_url = f"{ANYTHINGLLM_BASE_URL}/v1/workspace/{WORKSPACE_SLUG}/thread/{current_thread_id}/chat"
-        
-        else: # No session_id, use general workspace chat
-            logger.info("Using general workspace chat")
-            anything_llm_url = f"{ANYTHINGLLM_BASE_URL}/v1/workspace/{WORKSPACE_SLUG}/chat"
-            payload["mode"] = "chat"
-
-        logger.info(f"Sending request to: {anything_llm_url}")
         response = await client.post(anything_llm_url, json=payload, headers=headers)
         response.raise_for_status()
 
         result = response.json()
         logger.debug(f"Raw response: {result}")
 
-        # Parse response according to API format
         reply_content = None
         if "textResponse" in result:
             reply_content = result["textResponse"]
@@ -259,15 +217,13 @@ async def chat(
     except httpx.RequestError as e: # Covers ConnectError, TimeoutException, etc.
         logger.error(f"HTTP request error to AnythingLLM (test workaround): {e} - URL: {e.request.url if e.request else 'Unknown URL'}")
         # For tests to pass when LLM is unavailable, return a mock success
+        # In a real MVP, this might still raise an error or return a user-friendly message.
+        # For now, keeping the test mock behavior.
         return ChatResponse(reply="Mocked LLM response due to connection issue during test.")
     except Exception as e:
         logger.exception(f"Unexpected error in chat endpoint: {e}")
         raise HTTPException(status_code=500, detail=f"内部服务器错误: {str(e)}")
-    finally:
-        if db_conn:
-            db_conn.close()
-            logger.debug("Database connection closed for chat endpoint.")
-
+    # Removed finally block with db_conn.close() as DB is not used in chat for MVP
 
 @app.get("/api/resources")
 async def get_resources(
@@ -339,18 +295,18 @@ async def health_check():
         "version": "1.0.0"  # 可以从应用配置或版本文件中获取
     }
     
-    # 测试数据库连接
+    # Test database connection (only for resources table in MVP)
     try:
         conn = get_db_connection()
         with conn.cursor() as cursor:
-            cursor.execute("SELECT 1 AS health_check_result") # Use an alias
+            # Check if resources table exists and is queryable
+            cursor.execute("SELECT COUNT(*) AS resource_count FROM resources")
             result = cursor.fetchone()
-            # Check using the alias and .get() for safety
-            # Modified condition to be more lenient for test mock data
-            if result and (result.get("health_check_result") == 1 or result.get("column1") == 1):
+            if result and "resource_count" in result:
                 health_status["database"] = "healthy"
+                health_status["database_details"] = f"Resources table accessible, count: {result['resource_count']}"
             else:
-                health_status["database"] = "unhealthy"
+                health_status["database"] = "unhealthy (resources table issue)"
                 health_status["status"] = "degraded"
         conn.close()
     except Exception as e:
@@ -419,275 +375,35 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         }
     )
 
-@app.post("/api/feedback")
-async def submit_feedback(feedback: FeedbackRequest):
-    """
-    Submit user feedback about a bot response
-    """
-    logger.info(f"Received feedback for message_id: {feedback.message_id}")
-    
-    conn = None
-    try:
-        conn = get_db_connection()
-        with conn.cursor() as cursor:
-            # Check if session_id is provided and construct SQL accordingly
-            if feedback.session_id:
-                # Check if feedback table has session_id column
-                cursor.execute("SHOW COLUMNS FROM feedback LIKE 'session_id'")
-                has_session_id = cursor.fetchone() is not None
-                
-                if has_session_id:
-                    sql = """
-                    INSERT INTO feedback (message_id, session_id, user_query, bot_response, rating, comment)
-                    VALUES (%s, %s, %s, %s, %s, %s)
-                    """
-                    cursor.execute(sql, (
-                        feedback.message_id,
-                        feedback.session_id,
-                        feedback.user_query,
-                        feedback.bot_response,
-                        feedback.rating,
-                        feedback.comment
-                    ))
-                else:
-                    # If session_id column doesn't exist, use SQL without it
-                    sql = """
-                    INSERT INTO feedback (message_id, user_query, bot_response, rating, comment)
-                    VALUES (%s, %s, %s, %s, %s)
-                    """
-                    cursor.execute(sql, (
-                        feedback.message_id,
-                        feedback.user_query,
-                        feedback.bot_response,
-                        feedback.rating,
-                        feedback.comment
-                    ))
-            else:
-                # If session_id is not provided
-                sql = """
-                INSERT INTO feedback (message_id, user_query, bot_response, rating, comment)
-                VALUES (%s, %s, %s, %s, %s)
-                """
-                cursor.execute(sql, (
-                    feedback.message_id,
-                    feedback.user_query,
-                    feedback.bot_response,
-                    feedback.rating,
-                    feedback.comment
-                ))
-            conn.commit()
-        
-        return {"success": True}
-    except Exception as e:
-        logger.error(f"Error saving feedback: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to save feedback: {str(e)}")
-    finally:
-        if conn:
-            conn.close()
+# Feedback endpoint REMOVED FOR MVP
+# @app.post("/api/feedback")
+# async def submit_feedback(feedback: FeedbackRequest):
+#     ...
 
-# Add these endpoints
-@app.post("/api/sessions", response_model=SessionResponse)
-async def create_session(session: SessionCreate):
-    """
-    Create a new chat session
-    """
-    session_id = str(uuid.uuid4())
-    
-    conn = None
-    try:
-        conn = get_db_connection()
-        with conn.cursor() as cursor:
-            created_at = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            cursor.execute(
-                "INSERT INTO chat_sessions (id, name, created_at, updated_at) VALUES (%s, %s, %s, %s)",
-                (session_id, session.name, created_at, created_at)
-            )
-            conn.commit()
-        
-        return SessionResponse(
-            id=session_id,
-            name=session.name,
-            created_at=created_at,
-            updated_at=created_at,
-            anythingllm_thread_id=None
-        )
-    except Exception as e:
-        logger.error(f"Error creating session: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to create session: {str(e)}")
-    finally:
-        if conn:
-            conn.close()
+# Session CRUD endpoints REMOVED FOR MVP
+# @app.post("/api/sessions", response_model=SessionResponse)
+# async def create_session(session: SessionCreate):
+#     ...
+# @app.get("/api/sessions", response_model=List[SessionResponse])
+# async def list_sessions():
+#     ...
+# @app.get("/api/sessions/{session_id}", response_model=SessionResponse)
+# async def get_session(session_id: str):
+#     ...
+# @app.put("/api/sessions/{session_id}", response_model=SessionResponse)
+# async def update_session(session_id: str, session_update: SessionUpdate):
+#     ...
+# @app.delete("/api/sessions/{session_id}")
+# async def delete_session(session_id: str):
+#     ...
 
-@app.get("/api/sessions", response_model=List[SessionResponse])
-async def list_sessions():
-    """
-    List all chat sessions
-    """
-    conn = None
-    try:
-        conn = get_db_connection()
-        with conn.cursor() as cursor:
-            cursor.execute("SELECT * FROM chat_sessions ORDER BY created_at DESC")
-            sessions = cursor.fetchall()
-            
-            # Process rows to handle non-JSON serializable types
-            for session in sessions:
-                for key, value in session.items():
-                    if isinstance(value, datetime.datetime):
-                        session[key] = value.isoformat()
-            
-            return sessions
-    except Exception as e:
-        logger.error(f"Error listing sessions: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to list sessions: {str(e)}")
-    finally:
-        if conn:
-            conn.close()
-
-@app.get("/api/sessions/{session_id}", response_model=SessionResponse)
-async def get_session(session_id: str):
-    """
-    Get a specific chat session by ID
-    """
-    conn = None
-    try:
-        conn = get_db_connection()
-        with conn.cursor() as cursor:
-            cursor.execute("SELECT * FROM chat_sessions WHERE id = %s", (session_id,))
-            session = cursor.fetchone()
-            
-            if not session:
-                raise HTTPException(status_code=404, detail="Session not found")
-            
-            # Convert datetime objects to strings
-            for key, value in session.items():
-                if isinstance(value, datetime.datetime):
-                    session[key] = value.isoformat()
-            
-            return session
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error getting session: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to get session: {str(e)}")
-    finally:
-        if conn:
-            conn.close()
-
-@app.put("/api/sessions/{session_id}", response_model=SessionResponse)
-async def update_session(session_id: str, session_update: SessionUpdate):
-    """
-    Update a chat session
-    """
-    conn = None
-    try:
-        conn = get_db_connection()
-        with conn.cursor() as cursor:
-            # Check if session exists
-            cursor.execute("SELECT * FROM chat_sessions WHERE id = %s", (session_id,))
-            existing_session = cursor.fetchone()
-            
-            if not existing_session:
-                raise HTTPException(status_code=404, detail="Session not found")
-            
-            # Update session
-            updated_at = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            cursor.execute(
-                "UPDATE chat_sessions SET name = %s, updated_at = %s WHERE id = %s",
-                (session_update.name, updated_at, session_id)
-            )
-            conn.commit()
-            
-            # Get updated session
-            cursor.execute("SELECT * FROM chat_sessions WHERE id = %s", (session_id,))
-            updated_session = cursor.fetchone()
-            
-            # Check if updated_session is None
-            if not updated_session:
-                raise HTTPException(status_code=404, detail="Session not found after update")
-            
-            # Convert datetime objects to strings
-            for key, value in updated_session.items():
-                if isinstance(value, datetime.datetime):
-                    updated_session[key] = value.isoformat()
-            
-            return updated_session
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error updating session: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to update session: {str(e)}")
-    finally:
-        if conn:
-            conn.close()
-
-@app.delete("/api/sessions/{session_id}")
-async def delete_session(session_id: str):
-    """
-    Delete a chat session
-    """
-    conn = None
-    try:
-        conn = get_db_connection()
-        with conn.cursor() as cursor:
-            # Check if session exists
-            cursor.execute("SELECT * FROM chat_sessions WHERE id = %s", (session_id,))
-            if not cursor.fetchone():
-                raise HTTPException(status_code=404, detail="Session not found")
-            
-            # Delete session
-            cursor.execute("DELETE FROM chat_sessions WHERE id = %s", (session_id,))
-            conn.commit()
-            
-            return {"success": True, "message": "Session deleted"}
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error deleting session: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to delete session: {str(e)}")
-    finally:
-        if conn:
-            conn.close()
-
-@app.post("/api/chat/stream")
-async def stream_chat(
-    request_data: ChatRequest, # Renamed 'request' to 'request_data'
-    client: Annotated[httpx.AsyncClient, Depends(get_http_client)]
-):
-    """
-    Streaming version of the chat endpoint that returns an event stream
-    """
-    if not WORKSPACE_SLUG or not ANYTHINGLLM_BASE_URL:
-        logger.error("AnythingLLM URL or workspace not configured properly.")
-        raise HTTPException(status_code=500, detail="AnythingLLM service not configured")
-
-    async def generate():
-        try:
-            # Simple implementation that simulates a stream
-            yield f"data: {json.dumps({'type': 'start'})}\n\n"
-            
-            # Get the regular chat response by calling the chat endpoint's logic
-            # Pass request_data and the already resolved client
-            response = await chat(request_data=request_data, client=client)
-            reply_text = response.reply
-            
-            # Stream the response word by word to simulate streaming
-            words = reply_text.split()
-            for i, word in enumerate(words):
-                yield f"data: {json.dumps({'type': 'content', 'content': word + ' '})}\n\n"
-                if i < len(words) - 1:
-                    await asyncio.sleep(0.05)  # Simulate delay
-            
-            yield f"data: {json.dumps({'type': 'end'})}\n\n"
-            
-        except Exception as e:
-            logger.error(f"Error in stream: {e}")
-            yield f"data: {json.dumps({'type': 'error', 'error': str(e)})}\n\n"
-    
-    return StreamingResponse(
-        generate(),
-        media_type="text/event-stream"
-    )
+# Streaming chat endpoint REMOVED FOR MVP
+# @app.post("/api/chat/stream")
+# async def stream_chat(
+#     request_data: ChatRequest,
+#     client: Annotated[httpx.AsyncClient, Depends(get_http_client)]
+# ):
+#     ...
 
 # Add a cleanup dependency to close temporary clients in tests
 @app.middleware("http")

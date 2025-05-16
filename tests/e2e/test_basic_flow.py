@@ -2,7 +2,7 @@
 Author: zhen doniajohary2677@gmail.com
 Date: 2025-05-15 20:57:50
 LastEditors: zhen doniajohary2677@gmail.com
-LastEditTime: 2025-05-16 10:10:32
+LastEditTime: 2025-05-16 10:23:21
 FilePath: \0421PysChat\tests\e2e\test_basic_flow.py
 Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 '''
@@ -47,45 +47,45 @@ def test_send_message_and_get_response(page: Page):
     message_text = page.locator(".message.assistant .message-content").last
     expect(message_text).not_to_be_empty()
 
-def test_feedback_functionality(page: Page):
-    """Test the feedback functionality"""
-    # First send a message to get a response
-    page.goto(f"{FRONTEND_URL}/chat")
-    page.fill(".chat-input textarea", "What are some relaxation techniques?")
-    page.click(".send-button")
-    page.wait_for_selector(".message.assistant", timeout=15000)
+# def test_feedback_functionality(page: Page):
+#     """Test the feedback functionality"""
+#     # First send a message to get a response
+#     page.goto(f"{FRONTEND_URL}/chat")
+#     page.fill(".chat-input textarea", "What are some relaxation techniques?")
+#     page.click(".send-button")
+#     page.wait_for_selector(".message.assistant", timeout=15000)
     
-    # Click the positive feedback button
-    feedback_button = page.locator(".message.assistant .feedback-buttons [data-rating='1']").last
-    feedback_button.click()
+#     # Click the positive feedback button
+#     feedback_button = page.locator(".message.assistant .feedback-buttons [data-rating='1']").last
+#     feedback_button.click()
     
-    # Verify feedback confirmation message appears
-    page.wait_for_selector(".feedback-confirmation")
-    expect(page.locator(".feedback-confirmation")).to_be_visible()
+#     # Verify feedback confirmation message appears
+#     page.wait_for_selector(".feedback-confirmation")
+#     expect(page.locator(".feedback-confirmation")).to_be_visible()
 
-def test_session_management(page: Page):
-    """Test session creation and management"""
-    page.goto(f"{FRONTEND_URL}/chat")
+# def test_session_management(page: Page):
+#     """Test session creation and management"""
+#     page.goto(f"{FRONTEND_URL}/chat")
     
-    # Open session manager
-    page.click(".session-manager-button")
+#     # Open session manager
+#     page.click(".session-manager-button")
     
-    # Create a new session
-    page.click(".create-session-button")
-    page.fill(".session-name-input", "Test Automation Session")
-    page.click(".confirm-create-button")
+#     # Create a new session
+#     page.click(".create-session-button")
+#     page.fill(".session-name-input", "Test Automation Session")
+#     page.click(".confirm-create-button")
     
-    # Verify the new session appears in the list
-    session_item = page.locator(".session-list-item:has-text('Test Automation Session')")
-    expect(session_item).to_be_visible()
+#     # Verify the new session appears in the list
+#     session_item = page.locator(".session-list-item:has-text('Test Automation Session')")
+#     expect(session_item).to_be_visible()
     
-    # Select the session
-    session_item.click()
+#     # Select the session
+#     session_item.click()
     
-    # Send a message in this session
-    page.fill(".chat-input textarea", "This is a message in my new session")
-    page.click(".send-button")
+#     # Send a message in this session
+#     page.fill(".chat-input textarea", "This is a message in my new session")
+#     page.click(".send-button")
     
-    # Verify response is received
-    page.wait_for_selector(".message.assistant", timeout=15000)
-    expect(page.locator(".message.assistant").last).to_be_visible()
+#     # Verify response is received
+#     page.wait_for_selector(".message.assistant", timeout=15000)
+#     expect(page.locator(".message.assistant").last).to_be_visible()

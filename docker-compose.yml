@@ -4,68 +4,126 @@ services:
   frontend:
     build:
       context: ./frontend
-      dockerfile: ../Dockerfile.frontend
+      dockerfile: Dockerfile
     ports:
       - "${FRONTEND_PORT:-80}:80"
     depends_on:
       - backend
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     networks:
       - psychat-network
-    restart: unless-stopped
 
   backend:
     build:
       context: ./backend
-      dockerfile: ../Dockerfile.backend
+      dockerfile: Dockerfile
     ports:
       - "${BACKEND_PORT:-8000}:8000"
     environment:
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_USER=${MYSQL_USER}
+      - DB_PASSWORD=${MYSQL_PASSWORD}
+      - DB_NAME=${DB_NAME}
       - ANYTHINGLLM_API_BASE_URL=http://anythingllm:3001
       - ANYTHINGLLM_WORKSPACE_SLUG=${ANYTHINGLLM_WORKSPACE_SLUG:-mentalhealthbot}
       - ANYTHINGLLM_API_KEY=${ANYTHINGLLM_API_KEY}
-      - HTTPX_TIMEOUT=60.0
-      - DB_HOST=db
-      - DB_PORT=3306
-      - DB_USER=${MYSQL_USER:-psychat_app}
-      - DB_PASSWORD=${MYSQL_PASSWORD:-secure_user_password}
-      - DB_NAME=${MYSQL_DATABASE:-mental_health_db}
+      - HTTPX_TIMEOUT=${HTTPX_TIMEOUT:-60.0}
     depends_on:
       - db
       - anythingllm
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    volumes:
+      - ./logs:/app/logs
     networks:
       - psychat-network
-    restart: unless-stopped
 
   db:
     image: mysql:8.0
     ports:
-      - "3306:3306"
+      - "${MYSQL_PORT:-3306}:3306"
     environment:
-      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-secure_root_password}
-      - MYSQL_DATABASE=${MYSQL_DATABASE:-mental_health_db}
-      - MYSQL_USER=${MYSQL_USER:-psychat_app}
-      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-secure_user_password}
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=${DB_NAME}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
     volumes:
       - mysql-data:/var/lib/mysql
       - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./database/backup:/backup
+    restart: unless-stopped
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "localhost",
+          "-u",
+          "root",
+          "-p${MYSQL_ROOT_PASSWORD}",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     networks:
       - psychat-network
-    restart: unless-stopped
 
   anythingllm:
-    image: mintplexlabs/anythingllm:latest
+    image: mintplexlabs/anythingllm:${ANYTHINGLLM_VERSION:-latest}
     ports:
       - "${ANYTHINGLLM_PORT:-3001}:3001"
     volumes:
       - anythingllm-data:/app/server/storage
     environment:
       - LLM_PROVIDER=custom
-      - CUSTOM_MODEL_URL=${DEEPSEEK_API_URL:-https://api.deepseek.com/v1}
+      - CUSTOM_MODEL_URL=${DEEPSEEK_API_URL}
       - CUSTOM_MODEL_KEY=${DEEPSEEK_API_KEY}
-      - EMBEDDING_ENGINE=bge-base-zh-v1.5
+      - EMBEDDING_ENGINE=${EMBEDDING_ENGINE:-bge-base-zh-v1.5}
+      - AUTH_TOKEN=${ANYTHINGLLM_AUTH_TOKEN:-}
+      - STORAGE_DIR=/app/server/storage
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     networks:
       - psychat-network
-    restart: unless-stopped
+
+  monitoring:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - psychat-network
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/dashboards:/etc/grafana/provisioning/dashboards
+      - ./monitoring/datasources:/etc/grafana/provisioning/datasources
+    networks:
+      - psychat-network
 
 networks:
   psychat-network:
@@ -74,3 +132,4 @@ networks:
 volumes:
   mysql-data:
   anythingllm-data:
+  grafana-data:

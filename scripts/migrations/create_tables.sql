@@ -10,24 +10,24 @@ CREATE TABLE IF NOT EXISTS resources (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
--- Create chat_sessions table
-CREATE TABLE IF NOT EXISTS chat_sessions (
-    id VARCHAR(36) PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    anythingllm_thread_id VARCHAR(255),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
+-- Create chat_sessions table (REMOVED FOR MVP)
+-- CREATE TABLE IF NOT EXISTS chat_sessions (
+--     id VARCHAR(36) PRIMARY KEY,
+--     name VARCHAR(255) NOT NULL,
+--     anythingllm_thread_id VARCHAR(255),
+--     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+-- );
 
--- Create feedback table
-CREATE TABLE IF NOT EXISTS feedback (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    message_id VARCHAR(255) NOT NULL,
-    session_id VARCHAR(36),
-    user_query TEXT NOT NULL,
-    bot_response TEXT NOT NULL,
-    rating INT NOT NULL,
-    comment TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (session_id) REFERENCES chat_sessions(id) ON DELETE CASCADE
-);
+-- Create feedback table (REMOVED FOR MVP)
+-- CREATE TABLE IF NOT EXISTS feedback (
+--     id INT AUTO_INCREMENT PRIMARY KEY,
+--     message_id VARCHAR(255) NOT NULL,
+--     session_id VARCHAR(36),
+--     user_query TEXT NOT NULL,
+--     bot_response TEXT NOT NULL,
+--     rating INT NOT NULL,
+--     comment TEXT,
+--     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--     FOREIGN KEY (session_id) REFERENCES chat_sessions(id) ON DELETE CASCADE
+-- );
